@@ -1,0 +1,27 @@
+# ビルド成果物
+build/
+.gradle/
+out/
+*.class
+*.jar
+*.war
+
+# 環境変数・機密情報
+.env
+.env.*
+application-local.properties
+application-local.yml
+
+# IDE設定
+.idea/
+*.iml
+.vscode/
+*.code-workspace
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ログ
+*.log
+logs/

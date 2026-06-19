@@ -1,0 +1,64 @@
+erDiagram
+    users ||--o{ beetles : "投稿する"
+    users ||--o{ transactions : "譲渡する(from)"
+    users ||--o{ transactions : "譲り受ける(to)"
+    users ||--o{ reviews : "評価する"
+    users ||--o{ reviews : "評価される"
+    beetles ||--o{ beetle_images : "持つ"
+    beetles ||--o{ transactions : "対象となる"
+    beetles |o--o{ beetles : "父個体(father_id)"
+    beetles |o--o{ beetles : "母個体(mother_id)"
+    transactions ||--o{ reviews : "紐づく"
+
+    users {
+        bigint id PK
+        varchar username "ユーザー名(一意)"
+        varchar email "メールアドレス(一意)"
+        varchar password_hash "ハッシュ化パスワード"
+        text bio "自己紹介"
+        timestamp created_at
+    }
+
+    beetles {
+        bigint id PK
+        bigint user_id FK "投稿者(users.id)"
+        bigint father_id FK "父個体(beetles.id, NULL可)"
+        bigint mother_id FK "母個体(beetles.id, NULL可)"
+        varchar name "名前"
+        varchar sex "オス/メス/不明"
+        varchar generation "累代(CBF1等)"
+        varchar locality "産地"
+        varchar emergence_date "羽化時期(年月)"
+        varchar stage "卵/幼虫/蛹/成虫"
+        text description "説明文"
+        timestamp created_at
+    }
+
+    beetle_images {
+        bigint id PK
+        bigint beetle_id FK
+        varchar image_url "画像URL(Cloudinary)"
+        boolean is_primary "代表画像フラグ"
+        int sort_order "表示順"
+        timestamp created_at
+    }
+
+    transactions {
+        bigint id PK
+        bigint beetle_id FK "譲渡対象の生体"
+        bigint from_user_id FK "譲渡元(users.id)"
+        bigint to_user_id FK "譲渡先(users.id)"
+        date transferred_on "譲渡日"
+        timestamp created_at
+    }
+
+    reviews {
+        bigint id PK
+        bigint transaction_id FK "対象の譲渡記録"
+        bigint reviewer_id FK "評価者(users.id)"
+        bigint reviewee_id FK "被評価者(users.id)"
+        int rating "評価点(1-5)"
+        varchar review_type "NORMAL/FOLLOW_UP"
+        text comment "コメント"
+        timestamp created_at
+    }

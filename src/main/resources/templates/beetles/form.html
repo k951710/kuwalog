@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>生体投稿 - クワログ</title>
+</head>
+<body>
+
+<h1>生体投稿</h1>
+
+<form th:action="@{/beetles}" th:object="${beetleForm}" method="post">
+
+    <div>
+        <label for="name">名前</label>
+        <input type="text" id="name" th:field="*{name}">
+        <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+    </div>
+
+    <div>
+        <label for="sex">性別</label>
+        <select id="sex" th:field="*{sex}">
+            <option value="">選択してください</option>
+            <option th:each="s : ${sexValues}"
+                    th:value="${s}"
+                    th:text="${s.label}"></option>
+        </select>
+        <span th:if="${#fields.hasErrors('sex')}" th:errors="*{sex}"></span>
+    </div>
+
+    <div>
+        <label for="stage">ステージ</label>
+        <select id="stage" th:field="*{stage}">
+            <option value="">選択してください</option>
+            <option th:each="s : ${stageValues}"
+                    th:value="${s}"
+                    th:text="${s.label}"></option>
+        </select>
+        <span th:if="${#fields.hasErrors('stage')}" th:errors="*{stage}"></span>
+    </div>
+
+    <div>
+        <label for="generation">累代</label>
+        <input type="text" id="generation" th:field="*{generation}" placeholder="例: CBF1">
+        <span th:if="${#fields.hasErrors('generation')}" th:errors="*{generation}"></span>
+    </div>
+
+    <div>
+        <label for="locality">産地</label>
+        <input type="text" id="locality" th:field="*{locality}" placeholder="例: 山梨県">
+        <span th:if="${#fields.hasErrors('locality')}" th:errors="*{locality}"></span>
+    </div>
+
+    <div>
+        <label for="emergenceDate">羽化時期</label>
+        <input type="text" id="emergenceDate" th:field="*{emergenceDate}" placeholder="例: 2024-06">
+        <span th:if="${#fields.hasErrors('emergenceDate')}" th:errors="*{emergenceDate}"></span>
+    </div>
+
+    <div>
+        <label for="description">説明</label>
+        <textarea id="description" th:field="*{description}"></textarea>
+        <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+    </div>
+
+    <button type="submit">投稿する</button>
+    <a th:href="@{/beetles}">キャンセル</a>
+
+</form>
+
+</body>
+</html>

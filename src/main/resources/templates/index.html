@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>クワログ</title>
+</head>
+<body>
+
+<h1>クワログ</h1>
+<p>ログイン済みです。</p>
+
+<nav>
+    <a th:href="@{/beetles}">生体一覧</a> |
+    <a th:href="@{/users/{u}(u=${loginUsername})}">マイページ</a>
+</nav>
+
+<form th:action="@{/logout}" method="post">
+    <button type="submit">ログアウト</button>
+</form>
+
+</body>
+</html>

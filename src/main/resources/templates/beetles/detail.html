@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${beetle.name} + ' - クワログ'"></title>
+</head>
+<body>
+
+<h1 th:text="${beetle.name}"></h1>
+
+<table>
+    <tr>
+        <th>性別</th>
+        <td th:text="${beetle.sex}"></td>
+    </tr>
+    <tr>
+        <th>ステージ</th>
+        <td th:text="${beetle.stage}"></td>
+    </tr>
+    <tr>
+        <th>累代</th>
+        <td th:text="${beetle.generation ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>産地</th>
+        <td th:text="${beetle.locality ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>羽化時期</th>
+        <td th:text="${beetle.emergenceDate ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>説明</th>
+        <td th:text="${beetle.description ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>投稿者</th>
+        <td><a th:href="@{/users/{u}(u=${beetle.user.username})}" th:text="${beetle.user.username}"></a></td>
+    </tr>
+    <tr>
+        <th>投稿日時</th>
+        <td th:text="${#temporals.format(beetle.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+    </tr>
+</table>
+
+<div th:if="${beetle.user.username == loginUsername}">
+    <a th:href="@{/beetles/{id}/edit(id=${beetle.id})}">編集</a>
+    <form th:action="@{/beetles/{id}/delete(id=${beetle.id})}" method="post"
+          onsubmit="return confirm('この生体を削除しますか？');">
+        <button type="submit">削除</button>
+    </form>
+</div>
+
+<a th:href="@{/beetles/{id}/transactions(id=${beetle.id})}">譲渡記録を見る</a>
+
+<div th:if="${beetle.user.username == loginUsername}">
+    <a th:href="@{/beetles/{id}/transactions/new(id=${beetle.id})}">譲渡記録を登録</a>
+</div>
+
+<a th:href="@{/beetles}">一覧に戻る</a>
+
+</body>
+</html>

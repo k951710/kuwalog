@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>評価登録 - クワログ</title>
+</head>
+<body>
+
+<h1>評価登録</h1>
+
+<p>
+    譲渡: <span th:text="${transaction.fromUser.username}"></span>
+    → <span th:text="${transaction.toUser.username}"></span>
+    （<span th:text="${transaction.transferredOn}"></span>）
+</p>
+
+<div th:if="${errorMessage}">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<form th:action="@{/transactions/{id}/reviews(id=${transaction.id})}"
+      th:object="${reviewForm}" method="post">
+
+    <input type="hidden" th:field="*{reviewType}">
+    <p>評価種別: <strong th:text="${reviewForm.reviewType.label}"></strong></p>
+
+    <div>
+        <label for="rating">評価（1〜5）</label>
+        <select id="rating" th:field="*{rating}">
+            <option value="">選択してください</option>
+            <option th:each="i : ${#numbers.sequence(1, 5)}"
+                    th:value="${i}"
+                    th:text="${i}"></option>
+        </select>
+        <span th:if="${#fields.hasErrors('rating')}" th:errors="*{rating}"></span>
+    </div>
+
+    <div>
+        <label for="comment">コメント</label>
+        <textarea id="comment" th:field="*{comment}"></textarea>
+    </div>
+
+    <button type="submit">登録する</button>
+    <a th:href="@{/beetles/{id}/transactions(id=${transaction.beetle.id})}">キャンセル</a>
+
+</form>
+
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>譲渡記録一覧 - クワログ</title>
+</head>
+<body>
+
+<h1>譲渡記録一覧</h1>
+<p>生体: <a th:href="@{/beetles/{id}(id=${beetle.id})}" th:text="${beetle.name}"></a></p>
+
+<div th:if="${#lists.isEmpty(transactions)}">
+    <p>譲渡記録はありません。</p>
+</div>
+
+<table th:unless="${#lists.isEmpty(transactions)}">
+    <thead>
+        <tr>
+            <th>譲渡元</th>
+            <th>譲渡先</th>
+            <th>譲渡日</th>
+            <th>登録日時</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr th:each="t : ${transactions}">
+            <td><a th:href="@{/users/{u}(u=${t.fromUser.username})}" th:text="${t.fromUser.username}"></a></td>
+            <td><a th:href="@{/users/{u}(u=${t.toUser.username})}" th:text="${t.toUser.username}"></a></td>
+            <td th:text="${t.transferredOn}"></td>
+            <td th:text="${#temporals.format(t.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            <td th:if="${t.fromUser.username == loginUsername or t.toUser.username == loginUsername}">
+                <a th:href="@{/transactions/{id}/reviews/new(id=${t.id},reviewType='NORMAL')}"
+                   th:style="${registeredTypesMap[t.id].contains('NORMAL')} ? 'pointer-events:none; color:gray;'">通常評価</a>
+                <a th:href="@{/transactions/{id}/reviews/new(id=${t.id},reviewType='FOLLOW_UP')}"
+                   th:style="${registeredTypesMap[t.id].contains('FOLLOW_UP')} ? 'pointer-events:none; color:gray;'">後追い評価</a>
+            </td>
+            <td th:unless="${t.fromUser.username == loginUsername or t.toUser.username == loginUsername}"></td>
+            <td>
+                <form th:if="${t.fromUser.username == loginUsername}"
+                      th:action="@{/beetles/{beetleId}/transactions/{id}/delete(beetleId=${beetle.id},id=${t.id})}"
+                      method="post"
+                      onsubmit="return confirm('この譲渡記録を削除しますか？');">
+                    <button type="submit">削除</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:each="t : ${transactions}" th:if="${not #lists.isEmpty(reviewsMap[t.id])}">
+            <td colspan="6">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>評価種別</th>
+                            <th>評価者</th>
+                            <th>被評価者</th>
+                            <th>評価</th>
+                            <th>コメント</th>
+                            <th>登録日時</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="r : ${reviewsMap[t.id]}">
+                            <td th:text="${r.reviewType.label}"></td>
+                            <td th:text="${r.reviewer.username}"></td>
+                            <td th:text="${r.reviewee.username}"></td>
+                            <td th:text="${r.rating}"></td>
+                            <td th:text="${r.comment ?: '-'}"></td>
+                            <td th:text="${#temporals.format(r.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+<a th:href="@{/beetles/{id}(id=${beetle.id})}">生体詳細に戻る</a>
+
+</body>
+</html>

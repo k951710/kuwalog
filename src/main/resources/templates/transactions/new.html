@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>譲渡記録登録 - クワログ</title>
+</head>
+<body>
+
+<h1>譲渡記録登録</h1>
+<p>生体: <a th:href="@{/beetles/{id}(id=${beetle.id})}" th:text="${beetle.name}"></a></p>
+
+<form th:action="@{/beetles/{id}/transactions(id=${beetle.id})}"
+      th:object="${transactionForm}" method="post">
+
+    <div>
+        <label for="toUsername">譲渡先ユーザー名</label>
+        <input type="text" id="toUsername" th:field="*{toUsername}">
+        <span th:if="${#fields.hasErrors('toUsername')}" th:errors="*{toUsername}"></span>
+    </div>
+
+    <div>
+        <label for="transferredOn">譲渡日</label>
+        <input type="date" id="transferredOn" th:field="*{transferredOn}">
+        <span th:if="${#fields.hasErrors('transferredOn')}" th:errors="*{transferredOn}"></span>
+    </div>
+
+    <button type="submit">登録する</button>
+    <a th:href="@{/beetles/{id}(id=${beetle.id})}">キャンセル</a>
+
+</form>
+
+</body>
+</html>

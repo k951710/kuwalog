@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="${profile.user.username} + ' - クワログ'"></title>
+</head>
+<body>
+
+<h1 th:text="${profile.user.username}"></h1>
+
+<section>
+    <h2>基本情報</h2>
+    <p th:text="${profile.user.bio ?: '自己紹介はありません'}"></p>
+    <p>登録日: <span th:text="${#temporals.format(profile.user.createdAt, 'yyyy/MM/dd')}"></span></p>
+</section>
+
+<section>
+    <h2>評価サマリー</h2>
+    <div th:if="${profile.reviewCount == 0}">
+        <p>まだ評価がありません。</p>
+    </div>
+    <div th:unless="${profile.reviewCount == 0}">
+        <p>総評価件数: <strong th:text="${profile.reviewCount}"></strong> 件</p>
+        <p>平均評価: <strong th:text="${#numbers.formatDecimal(profile.avgRating, 1, 1)}"></strong> / 5</p>
+    </div>
+</section>
+
+<section>
+    <h2>受けた評価</h2>
+    <div th:if="${#lists.isEmpty(profile.receivedReviews)}">
+        <p>評価はありません。</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(profile.receivedReviews)}">
+        <thead>
+            <tr>
+                <th>評価種別</th>
+                <th>評価点</th>
+                <th>コメント</th>
+                <th>評価者</th>
+                <th>日時</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="r : ${profile.receivedReviews}">
+                <td th:text="${r.reviewType.label}"></td>
+                <td th:text="${r.rating}"></td>
+                <td th:text="${r.comment ?: '-'}"></td>
+                <td><a th:href="@{/users/{u}(u=${r.reviewer.username})}" th:text="${r.reviewer.username}"></a></td>
+                <td th:text="${#temporals.format(r.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<section>
+    <h2>投稿した生体</h2>
+    <div th:if="${#lists.isEmpty(profile.beetles)}">
+        <p>投稿した生体はありません。</p>
+    </div>
+    <table th:unless="${#lists.isEmpty(profile.beetles)}">
+        <thead>
+            <tr>
+                <th>名前</th>
+                <th>性別</th>
+                <th>ステージ</th>
+                <th>産地</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:each="b : ${profile.beetles}">
+                <td><a th:href="@{/beetles/{id}(id=${b.id})}" th:text="${b.name}"></a></td>
+                <td th:text="${b.sex}"></td>
+                <td th:text="${b.stage}"></td>
+                <td th:text="${b.locality ?: '-'}"></td>
+            </tr>
+        </tbody>
+    </table>
+</section>
+
+<a th:href="@{/beetles}">生体一覧に戻る</a>
+
+</body>
+</html>

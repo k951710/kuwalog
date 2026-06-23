@@ -10,29 +10,71 @@
 
 <a th:href="@{/beetles/new}">新規投稿</a>
 
+<!-- 絞り込みフォーム -->
+<form th:action="@{/beetles}" method="get">
+    <select name="classification">
+        <option value="">分類（すべて）</option>
+        <option th:each="c : ${classificationValues}"
+                th:value="${c}"
+                th:text="${c.label}"
+                th:selected="${c == selectedClassification}"></option>
+    </select>
+
+    <select name="sex">
+        <option value="">性別（すべて）</option>
+        <option th:each="s : ${sexValues}"
+                th:value="${s}"
+                th:text="${s.label}"
+                th:selected="${s == selectedSex}"></option>
+    </select>
+
+    <select name="stage">
+        <option value="">ステージ（すべて）</option>
+        <option th:each="s : ${stageValues}"
+                th:value="${s}"
+                th:text="${s.label}"
+                th:selected="${s == selectedStage}"></option>
+    </select>
+
+    <input type="text" name="locality" placeholder="産地（部分一致）"
+           th:value="${selectedLocality}">
+
+    <button type="submit">絞り込む</button>
+    <a th:href="@{/beetles}">リセット</a>
+</form>
+
 <div th:if="${#lists.isEmpty(beetles)}">
-    <p>まだ生体が登録されていません。</p>
+    <p>該当する生体が見つかりませんでした。</p>
 </div>
 
 <table th:unless="${#lists.isEmpty(beetles)}">
     <thead>
         <tr>
+            <th>公開ID</th>
             <th>名前</th>
+            <th>分類</th>
             <th>性別</th>
             <th>ステージ</th>
             <th>産地</th>
             <th>累代</th>
             <th>羽化時期</th>
+            <th>投稿者</th>
         </tr>
     </thead>
     <tbody>
         <tr th:each="beetle : ${beetles}">
+            <td th:text="${beetle.publicId ?: '-'}"></td>
             <td><a th:href="@{/beetles/{id}(id=${beetle.id})}" th:text="${beetle.name}"></a></td>
+            <td th:text="${beetle.classification ?: '-'}"></td>
             <td th:text="${beetle.sex}"></td>
             <td th:text="${beetle.stage}"></td>
-            <td th:text="${beetle.locality}"></td>
-            <td th:text="${beetle.generation}"></td>
-            <td th:text="${beetle.emergenceDate}"></td>
+            <td th:text="${beetle.locality ?: '-'}"></td>
+            <td th:text="${beetle.generation ?: '-'}"></td>
+            <td th:text="${beetle.emergenceDate ?: '-'}"></td>
+            <td>
+                <a th:href="@{/users/{u}(u=${beetle.user.username})}"
+                   th:text="${beetle.user.username}"></a>
+            </td>
         </tr>
     </tbody>
 </table>

@@ -29,6 +29,9 @@ public class BeetleForm {
 
     private String description;
 
+    private Long fatherId;
+    private Long motherId;
+
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Sex getSex() { return sex; }
@@ -43,4 +46,8 @@ public class BeetleForm {
     public void setEmergenceDate(String emergenceDate) { this.emergenceDate = emergenceDate; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public Long getFatherId() { return fatherId; }
+    public void setFatherId(Long fatherId) { this.fatherId = fatherId; }
+    public Long getMotherId() { return motherId; }
+    public void setMotherId(Long motherId) { this.motherId = motherId; }
 }

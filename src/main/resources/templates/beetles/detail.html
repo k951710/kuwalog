@@ -10,6 +10,14 @@
 
 <table>
     <tr>
+        <th>公開ID</th>
+        <td th:text="${beetle.publicId ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>分類</th>
+        <td th:text="${beetle.classification ?: '-'}"></td>
+    </tr>
+    <tr>
         <th>性別</th>
         <td th:text="${beetle.sex}"></td>
     </tr>
@@ -30,8 +38,43 @@
         <td th:text="${beetle.emergenceDate ?: '-'}"></td>
     </tr>
     <tr>
+        <th>サイズ</th>
+        <td th:text="${beetle.sizeMm != null ? beetle.sizeMm + ' mm' : '-'}"></td>
+    </tr>
+    <tr>
+        <th>重さ</th>
+        <td th:text="${beetle.weightG != null ? beetle.weightG + ' g' : '-'}"></td>
+    </tr>
+    <tr>
+        <th>父個体</th>
+        <td>
+            <a th:if="${beetle.father != null}"
+               th:href="@{/beetles/{id}(id=${beetle.father.id})}"
+               th:text="${beetle.father.name}"></a>
+            <span th:if="${beetle.father == null}">-</span>
+        </td>
+    </tr>
+    <tr>
+        <th>母個体</th>
+        <td>
+            <a th:if="${beetle.mother != null}"
+               th:href="@{/beetles/{id}(id=${beetle.mother.id})}"
+               th:text="${beetle.mother.name}"></a>
+            <span th:if="${beetle.mother == null}">-</span>
+        </td>
+    </tr>
+    <tr>
         <th>説明</th>
         <td th:text="${beetle.description ?: '-'}"></td>
+    </tr>
+    <tr>
+        <th>生産者</th>
+        <td>
+            <a th:if="${breederExists}"
+               th:href="@{/users/{u}(u=${beetle.breederName})}"
+               th:text="${beetle.breederName}"></a>
+            <span th:if="${!breederExists}" th:text="${beetle.breederName ?: '-'}"></span>
+        </td>
     </tr>
     <tr>
         <th>投稿者</th>

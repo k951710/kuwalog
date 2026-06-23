@@ -1,0 +1,2 @@
+ALTER TABLE beetles ADD COLUMN size_mm DECIMAL(6,1);
+ALTER TABLE beetles ADD COLUMN weight_g DECIMAL(6,1);

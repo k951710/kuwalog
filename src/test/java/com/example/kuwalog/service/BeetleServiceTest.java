@@ -6,6 +6,9 @@ import com.example.kuwalog.entity.User;
 import com.example.kuwalog.entity.enums.Sex;
 import com.example.kuwalog.entity.enums.Stage;
 import com.example.kuwalog.repository.BeetleRepository;
+import com.example.kuwalog.repository.ReviewRepository;
+import com.example.kuwalog.repository.TransactionRepository;
+import com.example.kuwalog.repository.UsedBeetlePublicIdRepository;
 import com.example.kuwalog.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +30,15 @@ class BeetleServiceTest {
 
     @Mock
     private BeetleRepository beetleRepository;
+
+    @Mock
+    private UsedBeetlePublicIdRepository usedPublicIdRepository;
+
+    @Mock
+    private TransactionRepository transactionRepository;
+
+    @Mock
+    private ReviewRepository reviewRepository;
 
     @Mock
     private UserRepository userRepository;

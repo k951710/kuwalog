@@ -13,6 +13,18 @@ public interface BeetleRepository extends JpaRepository<Beetle, Long> {
 
     List<Beetle> findByUserOrderByCreatedAtDesc(User user);
 
-    @Query("SELECT b FROM Beetle b JOIN FETCH b.user WHERE b.id = :id")
+    @Query("SELECT b FROM Beetle b JOIN FETCH b.user LEFT JOIN FETCH b.father LEFT JOIN FETCH b.mother WHERE b.id = :id")
     Optional<Beetle> findByIdWithUser(@Param("id") Long id);
+
+    @Query("SELECT b FROM Beetle b JOIN FETCH b.user WHERE b.sex = :sex ORDER BY b.user.username, b.name")
+    List<Beetle> findBySexWithUser(@Param("sex") String sex);
+
+    @Query("SELECT DISTINCT b FROM Beetle b JOIN FETCH b.user WHERE b.sex = :sex AND b.stage = :stage AND (b.user = :user OR EXISTS (SELECT t FROM Transaction t WHERE t.beetle = b AND t.toUser = :user)) ORDER BY b.name")
+    List<Beetle> findParentCandidates(@Param("sex") String sex, @Param("stage") String stage, @Param("user") User user);
+
+    @Query(value = "SELECT MAX(CAST(SUBSTRING(public_id FROM 4) AS INTEGER)) FROM beetles WHERE public_id LIKE CONCAT(:prefix, '%')", nativeQuery = true)
+    Integer findMaxSequenceByPublicIdPrefix(@Param("prefix") String prefix);
+
+    @Query("SELECT b FROM Beetle b JOIN FETCH b.user ORDER BY b.createdAt DESC")
+    List<Beetle> findAllWithUser();
 }

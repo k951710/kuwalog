@@ -41,11 +41,26 @@ public class Beetle {
     @Column(name = "emergence_date", length = 7)
     private String emergenceDate;
 
+    @Column(name = "classification", length = 20)
+    private String classification;
+
+    @Column(name = "breeder_name", length = 50)
+    private String breederName;
+
     @Column(nullable = false, length = 10)
     private String stage;
 
     @Column(columnDefinition = "TEXT")
     private String description;
+
+    @Column(name = "size_mm", precision = 6, scale = 1)
+    private java.math.BigDecimal sizeMm;
+
+    @Column(name = "weight_g", precision = 6, scale = 1)
+    private java.math.BigDecimal weightG;
+
+    @Column(name = "public_id", length = 9, unique = true)
+    private String publicId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -73,9 +88,19 @@ public class Beetle {
     public void setLocality(String locality) { this.locality = locality; }
     public String getEmergenceDate() { return emergenceDate; }
     public void setEmergenceDate(String emergenceDate) { this.emergenceDate = emergenceDate; }
+    public String getClassification() { return classification; }
+    public void setClassification(String classification) { this.classification = classification; }
+    public String getBreederName() { return breederName; }
+    public void setBreederName(String breederName) { this.breederName = breederName; }
     public String getStage() { return stage; }
     public void setStage(String stage) { this.stage = stage; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public java.math.BigDecimal getSizeMm() { return sizeMm; }
+    public void setSizeMm(java.math.BigDecimal sizeMm) { this.sizeMm = sizeMm; }
+    public java.math.BigDecimal getWeightG() { return weightG; }
+    public void setWeightG(java.math.BigDecimal weightG) { this.weightG = weightG; }
+    public String getPublicId() { return publicId; }
+    public void setPublicId(String publicId) { this.publicId = publicId; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

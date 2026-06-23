@@ -11,6 +11,16 @@
 <form th:action="@{/beetles}" th:object="${beetleForm}" method="post">
 
     <div>
+        <label for="classification">分類</label>
+        <select id="classification" th:field="*{classification}">
+            <option value="">選択してください</option>
+            <option th:each="c : ${classificationValues}"
+                    th:value="${c}"
+                    th:text="${c.label}"></option>
+        </select>
+    </div>
+
+    <div>
         <label for="name">名前</label>
         <input type="text" id="name" th:field="*{name}">
         <span th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
@@ -57,15 +67,85 @@
     </div>
 
     <div>
+        <label for="breederName">生産者</label>
+        <input type="text" id="breederName" th:field="*{breederName}" placeholder="生産者のユーザー名">
+        <span th:if="${#fields.hasErrors('breederName')}" th:errors="*{breederName}"></span>
+    </div>
+
+    <div>
+        <label for="sizeMm">サイズ（mm）</label>
+        <input type="number" id="sizeMm" th:field="*{sizeMm}" step="0.1" min="0.1" placeholder="例: 75.5">
+        <span th:if="${#fields.hasErrors('sizeMm')}" th:errors="*{sizeMm}"></span>
+    </div>
+
+    <div>
+        <label for="weightG">重さ（g）</label>
+        <input type="number" id="weightG" th:field="*{weightG}" step="0.1" min="0.1" placeholder="例: 12.3">
+        <span th:if="${#fields.hasErrors('weightG')}" th:errors="*{weightG}"></span>
+    </div>
+
+    <div>
         <label for="description">説明</label>
         <textarea id="description" th:field="*{description}"></textarea>
         <span th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></span>
+    </div>
+
+    <!-- 父個体候補データ（JS用） -->
+    <div id="father-data" style="display:none">
+        <span th:each="b : ${fatherCandidates}"
+              th:attr="data-id=${b.id},data-pid=${b.publicId ?: ''},data-name=${b.name},data-cls=${b.classification ?: ''},data-loc=${b.locality ?: ''},data-eme=${b.emergenceDate ?: ''}"></span>
+    </div>
+
+    <div>
+        <label>父個体（任意）</label>
+        <div>
+            <label>公開IDで直接指定:</label>
+            <input type="text" id="father_id_input" placeholder="例: S26000001">
+            <span id="father_id_msg"></span>
+        </div>
+        <div>
+            <select id="father_cls"></select>
+            <select id="father_loc"></select>
+            <select id="father_eme"></select>
+        </div>
+        <select id="father_sel"></select>
+        <input type="hidden" th:field="*{fatherId}">
+    </div>
+
+    <!-- 母個体候補データ（JS用） -->
+    <div id="mother-data" style="display:none">
+        <span th:each="b : ${motherCandidates}"
+              th:attr="data-id=${b.id},data-pid=${b.publicId ?: ''},data-name=${b.name},data-cls=${b.classification ?: ''},data-loc=${b.locality ?: ''},data-eme=${b.emergenceDate ?: ''}"></span>
+    </div>
+
+    <div>
+        <label>母個体（任意）</label>
+        <div>
+            <label>公開IDで直接指定:</label>
+            <input type="text" id="mother_id_input" placeholder="例: S26000001">
+            <span id="mother_id_msg"></span>
+        </div>
+        <div>
+            <select id="mother_cls"></select>
+            <select id="mother_loc"></select>
+            <select id="mother_eme"></select>
+        </div>
+        <select id="mother_sel"></select>
+        <input type="hidden" th:field="*{motherId}">
     </div>
 
     <button type="submit">投稿する</button>
     <a th:href="@{/beetles}">キャンセル</a>
 
 </form>
+
+<script th:src="@{/js/parentCascade.js}"></script>
+<script>
+var fatherData = readCandidates('father-data');
+var motherData = readCandidates('mother-data');
+initCascade('father', fatherData, 'fatherId');
+initCascade('mother', motherData, 'motherId');
+</script>
 
 </body>
 </html>

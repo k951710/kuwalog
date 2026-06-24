@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ページが見つかりません - クワログ</title>
+</head>
+<body>
+
+<h1>404 - ページが見つかりません</h1>
+<p th:text="${message ?: 'お探しのページは存在しないか、削除された可能性があります。'}"></p>
+<a th:href="@{/beetles}">生体一覧に戻る</a>
+
+</body>
+</html>

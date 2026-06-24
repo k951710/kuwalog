@@ -1,16 +1,19 @@
 package com.example.kuwalog.controller;
 
+import com.example.kuwalog.dto.UserProfileForm;
 import com.example.kuwalog.dto.UserRegisterForm;
+import com.example.kuwalog.entity.User;
 import com.example.kuwalog.exception.DuplicateUserException;
 import com.example.kuwalog.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
 
 @Controller
 @RequestMapping("/users")
@@ -52,5 +55,35 @@ public class UserController {
         }
 
         return "redirect:/login?registered";
+    }
+
+    @GetMapping("/{username}/edit")
+    public String showEditForm(@PathVariable String username,
+                               @AuthenticationPrincipal UserDetails userDetails,
+                               Model model) {
+        if (!username.equals(userDetails.getUsername())) {
+            return "redirect:/users/" + username;
+        }
+        User user = userService.findByUsername(username);
+        UserProfileForm form = new UserProfileForm();
+        form.setBio(user.getBio());
+        model.addAttribute("userProfileForm", form);
+        model.addAttribute("username", username);
+        return "users/edit";
+    }
+
+    @PostMapping("/{username}/edit")
+    public String updateProfile(@PathVariable String username,
+                                @Valid @ModelAttribute("userProfileForm") UserProfileForm form,
+                                BindingResult bindingResult,
+                                @RequestParam(value = "profileImage", required = false) MultipartFile profileImage,
+                                @AuthenticationPrincipal UserDetails userDetails,
+                                Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("username", username);
+            return "users/edit";
+        }
+        userService.updateProfile(username, form, profileImage, userDetails.getUsername());
+        return "redirect:/users/" + username;
     }
 }

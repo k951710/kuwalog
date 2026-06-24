@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>プロフィール編集 - クワログ</title>
+</head>
+<body>
+
+<h1>プロフィール編集</h1>
+
+<form th:action="@{/users/{u}/edit(u=${username})}" th:object="${userProfileForm}" method="post" enctype="multipart/form-data">
+
+    <div>
+        <label for="bio">自己紹介</label>
+        <textarea id="bio" th:field="*{bio}" rows="5" cols="50" placeholder="自己紹介を入力してください（500文字以内）"></textarea>
+        <span th:if="${#fields.hasErrors('bio')}" th:errors="*{bio}"></span>
+    </div>
+
+    <div>
+        <label for="profileImage">プロフィール画像（2MB以下）</label>
+        <input type="file" id="profileImage" name="profileImage" accept="image/*">
+    </div>
+
+    <button type="submit">保存する</button>
+    <a th:href="@{/users/{u}(u=${username})}">キャンセル</a>
+
+</form>
+
+</body>
+</html>

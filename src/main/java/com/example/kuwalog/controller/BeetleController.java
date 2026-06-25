@@ -5,24 +5,40 @@ import com.example.kuwalog.entity.Beetle;
 import com.example.kuwalog.entity.enums.Classification;
 import com.example.kuwalog.entity.enums.Sex;
 import com.example.kuwalog.entity.enums.Stage;
+import com.example.kuwalog.entity.BeetleImage;
+import com.example.kuwalog.repository.BeetleImageRepository;
+import com.example.kuwalog.service.BeetleImageService;
 import com.example.kuwalog.service.BeetleService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/beetles")
 public class BeetleController {
 
     private final BeetleService beetleService;
+    private final BeetleImageService beetleImageService;
+    private final BeetleImageRepository beetleImageRepository;
+    private final com.example.kuwalog.service.FavoriteService favoriteService;
 
-    public BeetleController(BeetleService beetleService) {
+    public BeetleController(BeetleService beetleService, BeetleImageService beetleImageService,
+                            BeetleImageRepository beetleImageRepository,
+                            com.example.kuwalog.service.FavoriteService favoriteService) {
         this.beetleService = beetleService;
+        this.beetleImageService = beetleImageService;
+        this.beetleImageRepository = beetleImageRepository;
+        this.favoriteService = favoriteService;
     }
 
     @GetMapping
@@ -30,8 +46,17 @@ public class BeetleController {
                        @RequestParam(required = false) Sex sex,
                        @RequestParam(required = false) Stage stage,
                        @RequestParam(required = false) String locality,
+                       @RequestParam(defaultValue = "0") int page,
                        Model model) {
-        model.addAttribute("beetles", beetleService.findWithFilters(classification, sex, stage, locality));
+        Page<Beetle> beetlePage = beetleService.findWithFilters(classification, sex, stage, locality, page);
+        Map<Long, String> imageMap = new java.util.HashMap<>();
+        for (Beetle b : beetlePage.getContent()) {
+            beetleImageRepository.findFirstByBeetleOrderBySortOrderAsc(b)
+                    .map(BeetleImage::getImageUrl)
+                    .ifPresent(url -> imageMap.put(b.getId(), url));
+        }
+        model.addAttribute("beetlePage", beetlePage);
+        model.addAttribute("imageMap", imageMap);
         model.addAttribute("classificationValues", Classification.values());
         model.addAttribute("sexValues", Sex.values());
         model.addAttribute("stageValues", Stage.values());
@@ -56,10 +81,14 @@ public class BeetleController {
                          @AuthenticationPrincipal UserDetails userDetails,
                          Model model) {
         Beetle beetle = beetleService.findById(id);
+        String username = userDetails != null ? userDetails.getUsername() : null;
         model.addAttribute("beetle", beetle);
-        model.addAttribute("loginUsername", userDetails.getUsername());
+        model.addAttribute("loginUsername", username);
         model.addAttribute("breederExists",
                 beetle.getBreederName() != null && beetleService.existsByUsername(beetle.getBreederName()));
+        model.addAttribute("images", beetleImageService.findByBeetle(beetle));
+        model.addAttribute("favoriteCount", favoriteService.countByBeetleId(id));
+        model.addAttribute("favorited", favoriteService.isFavorited(id, username));
         return "beetles/detail";
     }
 
@@ -91,6 +120,7 @@ public class BeetleController {
 
         model.addAttribute("beetleForm", form);
         model.addAttribute("beetleId", id);
+        model.addAttribute("images", beetleImageService.findByBeetle(beetle));
         addFormAttributes(model, userDetails.getUsername());
         return "beetles/edit";
     }
@@ -99,16 +129,20 @@ public class BeetleController {
     public String update(@PathVariable Long id,
                          @Valid @ModelAttribute("beetleForm") BeetleForm form,
                          BindingResult bindingResult,
+                         @RequestParam(value = "images", required = false) List<MultipartFile> images,
                          @AuthenticationPrincipal UserDetails userDetails,
                          Model model) {
 
         if (bindingResult.hasErrors()) {
+            Beetle beetle = beetleService.findById(id);
             model.addAttribute("beetleId", id);
+            model.addAttribute("images", beetleImageService.findByBeetle(beetle));
             addFormAttributes(model, userDetails.getUsername());
             return "beetles/edit";
         }
 
         beetleService.update(id, form, userDetails.getUsername());
+        beetleImageService.uploadAll(id, images, userDetails.getUsername());
         return "redirect:/beetles/" + id;
     }
 
@@ -123,16 +157,20 @@ public class BeetleController {
     public String post(
             @Valid @ModelAttribute("beetleForm") BeetleForm form,
             BindingResult bindingResult,
+            @RequestParam(value = "images", required = false) List<MultipartFile> images,
             @AuthenticationPrincipal UserDetails userDetails,
-            Model model) {
+            Model model,
+            RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
             addFormAttributes(model, userDetails.getUsername());
             return "beetles/form";
         }
 
-        beetleService.post(form, userDetails.getUsername());
-        return "redirect:/beetles";
+        Beetle beetle = beetleService.post(form, userDetails.getUsername());
+        beetleImageService.uploadAll(beetle.getId(), images, userDetails.getUsername());
+        redirectAttributes.addFlashAttribute("posted", true);
+        return "redirect:/beetles/" + beetle.getId();
     }
 
     private void addFormAttributes(Model model, String username) {

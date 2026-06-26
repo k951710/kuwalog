@@ -10,6 +10,7 @@ import com.example.kuwalog.repository.BeetleImageRepository;
 import com.example.kuwalog.service.BeetleImageService;
 import com.example.kuwalog.service.BeetleService;
 import jakarta.validation.Valid;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.data.domain.Page;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -39,6 +40,16 @@ public class BeetleController {
         this.beetleImageService = beetleImageService;
         this.beetleImageRepository = beetleImageRepository;
         this.favoriteService = favoriteService;
+    }
+
+    @org.springframework.web.bind.annotation.InitBinder
+    public void initBinder(org.springframework.web.bind.WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+        binder.registerCustomEditor(Classification.class, new java.beans.PropertyEditorSupport() {
+            @Override public void setAsText(String text) {
+                setValue(text == null || text.isEmpty() ? null : Classification.valueOf(text));
+            }
+        });
     }
 
     @GetMapping
@@ -121,7 +132,7 @@ public class BeetleController {
         model.addAttribute("beetleForm", form);
         model.addAttribute("beetleId", id);
         model.addAttribute("images", beetleImageService.findByBeetle(beetle));
-        addFormAttributes(model, userDetails.getUsername());
+        addFormAttributes(model, userDetails.getUsername(), id);
         return "beetles/edit";
     }
 
@@ -131,18 +142,20 @@ public class BeetleController {
                          BindingResult bindingResult,
                          @RequestParam(value = "images", required = false) List<MultipartFile> images,
                          @AuthenticationPrincipal UserDetails userDetails,
-                         Model model) {
+                         Model model,
+                         RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
             Beetle beetle = beetleService.findById(id);
             model.addAttribute("beetleId", id);
             model.addAttribute("images", beetleImageService.findByBeetle(beetle));
-            addFormAttributes(model, userDetails.getUsername());
+            addFormAttributes(model, userDetails.getUsername(), id);
             return "beetles/edit";
         }
 
         beetleService.update(id, form, userDetails.getUsername());
         beetleImageService.uploadAll(id, images, userDetails.getUsername());
+        redirectAttributes.addFlashAttribute("updated", true);
         return "redirect:/beetles/" + id;
     }
 
@@ -174,10 +187,20 @@ public class BeetleController {
     }
 
     private void addFormAttributes(Model model, String username) {
+        addFormAttributes(model, username, null);
+    }
+
+    private void addFormAttributes(Model model, String username, Long excludeId) {
         model.addAttribute("classificationValues", Classification.values());
         model.addAttribute("sexValues", Sex.values());
         model.addAttribute("stageValues", Stage.values());
-        model.addAttribute("fatherCandidates", beetleService.findParentCandidates(Sex.MALE, username));
-        model.addAttribute("motherCandidates", beetleService.findParentCandidates(Sex.FEMALE, username));
+        List<Beetle> fathers = beetleService.findParentCandidates(Sex.MALE, username);
+        List<Beetle> mothers = beetleService.findParentCandidates(Sex.FEMALE, username);
+        if (excludeId != null) {
+            fathers = fathers.stream().filter(b -> !b.getId().equals(excludeId)).toList();
+            mothers = mothers.stream().filter(b -> !b.getId().equals(excludeId)).toList();
+        }
+        model.addAttribute("fatherCandidates", fathers);
+        model.addAttribute("motherCandidates", mothers);
     }
 }

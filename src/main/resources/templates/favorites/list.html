@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('お気に入り一覧')}"></th:block>
+    <style>
+        .beetle-card {
+            background-color: var(--kw-surface);
+            border: 1px solid var(--kw-border);
+            border-radius: 4px;
+            transition: border-color 0.2s;
+            text-decoration: none;
+            color: var(--kw-text);
+            display: block;
+        }
+        .beetle-card:hover {
+            border-color: var(--kw-accent);
+            color: var(--kw-text);
+        }
+        .beetle-card-img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 4px 4px 0 0;
+            background-color: #111;
+        }
+        .beetle-card-noimg {
+            width: 100%;
+            aspect-ratio: 1;
+            background-color: #111;
+            border-radius: 4px 4px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--kw-border);
+            font-size: 2rem;
+        }
+    </style>
+</head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container" style="max-width:1100px;">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h4 m-0" style="letter-spacing:0.1em;">★ お気に入り</h1>
+        <a th:href="@{/beetles}" class="btn btn-sm btn-kw-outline">← 生体一覧へ</a>
+    </div>
+
+    <div th:if="${beetles.isEmpty()}" class="text-center py-5" style="color:var(--kw-muted);">
+        お気に入りに登録した生体はありません。
+    </div>
+
+    <div th:unless="${beetles.isEmpty()}" class="row g-3">
+        <div th:each="beetle : ${beetles}" class="col-6 col-md-4 col-lg-3">
+            <a th:href="@{/beetles/{id}(id=${beetle.id})}" class="beetle-card">
+                <img th:if="${imageMap[beetle.id] != null}"
+                     th:src="${imageMap[beetle.id]}"
+                     alt="生体画像" class="beetle-card-img">
+                <div th:if="${imageMap[beetle.id] == null}" class="beetle-card-noimg">&#128027;</div>
+                <div class="p-3">
+                    <div class="fw-500 mb-2" style="font-size:0.95rem;" th:text="${beetle.name}"></div>
+                    <table style="width:100%; font-size:0.78rem;">
+                        <tr>
+                            <td style="color:var(--kw-muted); padding-bottom:3px;">サイズ</td>
+                            <td style="padding-bottom:3px;" th:text="${beetle.sizeMm != null ? beetle.sizeMm + ' mm' : '-'}"></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--kw-muted); padding-bottom:3px;">重さ</td>
+                            <td style="padding-bottom:3px;" th:text="${beetle.weightG != null ? beetle.weightG + ' g' : '-'}"></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--kw-muted); padding-bottom:3px;">産地</td>
+                            <td style="padding-bottom:3px;" th:text="${beetle.locality ?: '-'}"></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--kw-muted); padding-bottom:3px;">累代</td>
+                            <td style="padding-bottom:3px;" th:text="${beetle.generation ?: '-'}"></td>
+                        </tr>
+                        <tr>
+                            <td style="color:var(--kw-muted);">羽化</td>
+                            <td th:text="${beetle.emergenceDate ?: '-'}"></td>
+                        </tr>
+                    </table>
+                </div>
+            </a>
+        </div>
+    </div>
+
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

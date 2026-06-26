@@ -10,6 +10,7 @@ import com.example.kuwalog.repository.ReviewRepository;
 import com.example.kuwalog.repository.TransactionRepository;
 import com.example.kuwalog.repository.UsedBeetlePublicIdRepository;
 import com.example.kuwalog.repository.UserRepository;
+import com.example.kuwalog.service.BeetleImageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +40,9 @@ class BeetleServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;
+
+    @Mock
+    private BeetleImageService beetleImageService;
 
     @Mock
     private UserRepository userRepository;
@@ -185,6 +189,66 @@ class BeetleServiceTest {
         assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("自分自身を母個体に設定できません");
+    }
+
+    // --- 羽化時期の整合性チェック ---
+
+    @Test
+    void post_子の羽化時期が父より後なら正常に登録できる() {
+        Beetle father = makeBeetle(20L, Sex.MALE);
+        father.setEmergenceDate("2023-06");
+        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
+        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        BeetleForm form = validForm();
+        form.setFatherId(20L);
+        form.setEmergenceDate("2024-06");
+        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
+    }
+
+    @Test
+    void post_子の羽化時期が父より前ならBAD_REQUESTになる() {
+        Beetle father = makeBeetle(20L, Sex.MALE);
+        father.setEmergenceDate("2024-06");
+        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
+
+        BeetleForm form = validForm();
+        form.setFatherId(20L);
+        form.setEmergenceDate("2023-06");
+        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("父個体の羽化時期より後");
+    }
+
+    @Test
+    void post_子の羽化時期が母より前ならBAD_REQUESTになる() {
+        Beetle mother = makeBeetle(21L, Sex.FEMALE);
+        mother.setEmergenceDate("2024-06");
+        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+        when(beetleRepository.findByIdWithUser(21L)).thenReturn(Optional.of(mother));
+
+        BeetleForm form = validForm();
+        form.setMotherId(21L);
+        form.setEmergenceDate("2023-06");
+        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("母個体の羽化時期より後");
+    }
+
+    @Test
+    void post_親の羽化時期が未設定ならチェックをスキップできる() {
+        Beetle father = makeBeetle(20L, Sex.MALE);
+        // emergenceDate を設定しない
+        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
+        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        BeetleForm form = validForm();
+        form.setFatherId(20L);
+        form.setEmergenceDate("2024-06");
+        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
     }
 
     // --- ヘルパー ---

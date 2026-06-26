@@ -123,6 +123,14 @@
     <div class="d-flex align-items-center gap-3">
         <a class="nav-link-kw" th:href="@{/beetles}">生体一覧</a>
         <th:block th:if="${isAuthenticated}">
+            <a class="nav-link-kw" th:href="@{/favorites}">★ お気に入り</a>
+            <a class="nav-link-kw position-relative" th:href="@{/conversations}">
+                メッセージ
+                <span th:if="${unreadMessageCount > 0}"
+                      class="position-absolute top-0 start-100 translate-middle badge rounded-pill"
+                      style="background-color:#e74c3c; font-size:0.65rem; min-width:1.2em;"
+                      th:text="${unreadMessageCount}"></span>
+            </a>
             <a class="nav-link-kw" th:href="@{/beetles/new}">投稿</a>
             <a class="nav-link-kw"
                th:href="@{/users/{u}(u=${loginUsername})}"
@@ -131,7 +139,7 @@
                 <button type="submit" class="btn btn-sm btn-kw-outline">ログアウト</button>
             </form>
         </th:block>
-        <th:block th:if="${!isAuthenticated}">
+        <th:block th:unless="${isAuthenticated}">
             <a class="btn btn-sm btn-kw-outline" th:href="@{/login}">ログイン</a>
             <a class="btn btn-sm btn-kw-outline" th:href="@{/users/register}">新規登録</a>
         </th:block>

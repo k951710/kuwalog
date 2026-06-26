@@ -12,5 +12,8 @@ public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
 
     long countByBeetleId(Long beetleId);
 
-    List<Favorite> findByUserIdOrderByCreatedAtDesc(Long userId);
+    @org.springframework.data.jpa.repository.Query(
+        "SELECT f FROM Favorite f JOIN FETCH f.beetle WHERE f.user.id = :userId ORDER BY f.createdAt DESC"
+    )
+    List<Favorite> findByUserIdWithBeetleOrderByCreatedAtDesc(@org.springframework.data.repository.query.Param("userId") Long userId);
 }

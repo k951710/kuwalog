@@ -12,6 +12,30 @@
 
     <h1 class="h4 mb-4" style="letter-spacing:0.1em;">生体編集</h1>
 
+    <!-- 登録済み画像（ネスト禁止のため main フォームの外に配置） -->
+    <div th:if="${not #lists.isEmpty(images)}" class="kw-card p-4 mb-3">
+        <p class="kw-section-title">登録済み画像</p>
+        <div class="d-flex gap-2 flex-wrap">
+            <div th:each="img : ${images}" class="position-relative">
+                <img th:src="${img.imageUrl}" alt="生体画像"
+                     style="width:100px; height:100px; object-fit:cover; border-radius:4px; border:2px solid var(--kw-border);"
+                     th:style="${img.primary} ? 'border-color:var(--kw-accent-light);' : ''">
+                <div class="d-flex gap-1 mt-1">
+                    <form th:unless="${img.primary}"
+                          th:action="@{/beetles/{bid}/images/{iid}/primary(bid=${beetleId},iid=${img.id})}"
+                          method="post" class="m-0">
+                        <button type="submit" class="btn btn-kw-outline" style="font-size:0.65rem; padding:2px 6px;">代表</button>
+                    </form>
+                    <form th:action="@{/beetles/{bid}/images/{iid}/delete(bid=${beetleId},iid=${img.id})}"
+                          method="post" class="m-0"
+                          onsubmit="return confirm('この画像を削除しますか？');">
+                        <button type="submit" class="btn btn-outline-danger" style="font-size:0.65rem; padding:2px 6px;">削除</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="kw-card p-4">
         <form th:action="@{/beetles/{id}/edit(id=${beetleId})}" th:object="${beetleForm}" method="post" enctype="multipart/form-data">
 
@@ -141,31 +165,7 @@
                 <input type="hidden" th:field="*{motherId}">
             </div>
 
-            <p class="kw-section-title">画像</p>
-
-            <!-- 登録済み画像 -->
-            <div th:if="${not #lists.isEmpty(images)}" class="mb-3">
-                <label class="form-label">登録済み画像</label>
-                <div class="d-flex gap-2 flex-wrap">
-                    <div th:each="img : ${images}" class="position-relative">
-                        <img th:src="${img.imageUrl}" alt="生体画像"
-                             style="width:100px; height:100px; object-fit:cover; border-radius:4px; border:2px solid var(--kw-border);"
-                             th:style="${img.primary} ? 'border-color:var(--kw-accent-light);' : ''">
-                        <div class="d-flex gap-1 mt-1">
-                            <form th:unless="${img.primary}"
-                                  th:action="@{/beetles/{bid}/images/{iid}/primary(bid=${beetleId},iid=${img.id})}"
-                                  method="post" class="m-0">
-                                <button type="submit" class="btn btn-kw-outline" style="font-size:0.65rem; padding:2px 6px;">代表</button>
-                            </form>
-                            <form th:action="@{/beetles/{bid}/images/{iid}/delete(bid=${beetleId},iid=${img.id})}"
-                                  method="post" class="m-0"
-                                  onsubmit="return confirm('この画像を削除しますか？');">
-                                <button type="submit" class="btn btn-outline-danger" style="font-size:0.65rem; padding:2px 6px;">削除</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <p class="kw-section-title">画像を追加</p>
 
             <div th:if="${#lists.size(images) < 4}" class="mb-4">
                 <label class="form-label">画像を追加（最大4枚）</label>

@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>ページが見つかりません - クワログ</title>
+    <th:block th:replace="~{fragments/layout :: head('404 Not Found')}"></th:block>
 </head>
 <body>
 
-<h1>404 - ページが見つかりません</h1>
-<p th:text="${message ?: 'お探しのページは存在しないか、削除された可能性があります。'}"></p>
-<a th:href="@{/beetles}">生体一覧に戻る</a>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
 
+<div class="container text-center" style="max-width:500px; padding-top:80px;">
+    <div style="font-size:4rem; font-weight:700; color:var(--kw-border);">404</div>
+    <h1 class="h4 mt-2 mb-3">ページが見つかりません</h1>
+    <p style="color:var(--kw-muted); font-size:0.9rem;"
+       th:text="${message ?: 'お探しのページは存在しないか、削除された可能性があります。'}"></p>
+    <a th:href="@{/beetles}" class="btn btn-kw-outline mt-3">生体一覧に戻る</a>
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -18,7 +18,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -29,31 +34,42 @@ public class BeetleService {
     private final UsedBeetlePublicIdRepository usedPublicIdRepository;
     private final TransactionRepository transactionRepository;
     private final ReviewRepository reviewRepository;
+    private final BeetleImageService beetleImageService;
 
     public BeetleService(BeetleRepository beetleRepository, UserRepository userRepository,
                          UsedBeetlePublicIdRepository usedPublicIdRepository,
                          TransactionRepository transactionRepository,
-                         ReviewRepository reviewRepository) {
+                         ReviewRepository reviewRepository,
+                         BeetleImageService beetleImageService) {
         this.beetleRepository = beetleRepository;
         this.userRepository = userRepository;
         this.usedPublicIdRepository = usedPublicIdRepository;
         this.transactionRepository = transactionRepository;
         this.reviewRepository = reviewRepository;
+        this.beetleImageService = beetleImageService;
     }
 
+    private static final int PAGE_SIZE = 10;
+
     @Transactional(readOnly = true)
-    public List<Beetle> findWithFilters(Classification classification, Sex sex, Stage stage, String locality) {
+    public Page<Beetle> findWithFilters(Classification classification, Sex sex, Stage stage,
+                                        String locality, int page) {
         String cls = classification != null ? classification.getLabel() : null;
         String s   = sex != null ? sex.getLabel() : null;
         String st  = stage != null ? stage.getLabel() : null;
         String loc = (locality != null && !locality.isBlank()) ? locality.trim() : null;
 
-        return beetleRepository.findAllWithUser().stream()
+        List<Beetle> filtered = beetleRepository.findAllWithUser().stream()
                 .filter(b -> cls == null || cls.equals(b.getClassification()))
                 .filter(b -> s   == null || s.equals(b.getSex()))
                 .filter(b -> st  == null || st.equals(b.getStage()))
                 .filter(b -> loc == null || (b.getLocality() != null && b.getLocality().contains(loc)))
                 .toList();
+
+        int start = page * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filtered.size());
+        List<Beetle> pageContent = start >= filtered.size() ? List.of() : filtered.subList(start, end);
+        return new PageImpl<>(pageContent, PageRequest.of(page, PAGE_SIZE), filtered.size());
     }
 
     @Transactional(readOnly = true)
@@ -112,7 +128,8 @@ public class BeetleService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "削除権限がありません");
         }
 
-        // 紐づく譲渡記録とレビューを先に削除（FK制約のため）
+        // 紐づくデータをFK制約の順に削除
+        beetleImageService.deleteAllForBeetle(beetle);
         transactionRepository.findByBeetleWithUsers(beetle).forEach(t -> {
             reviewRepository.deleteByTransaction(t);
             transactionRepository.delete(t);
@@ -147,6 +164,10 @@ public class BeetleService {
             if (!Sex.MALE.getLabel().equals(father.getSex())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "父個体にはオスの生体のみ選択できます");
             }
+            if (form.getEmergenceDate() != null && father.getEmergenceDate() != null
+                    && !YearMonth.parse(form.getEmergenceDate()).isAfter(YearMonth.parse(father.getEmergenceDate()))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "羽化時期は父個体の羽化時期より後の日付を入力してください");
+            }
             beetle.setFather(father);
         } else {
             beetle.setFather(null);
@@ -160,6 +181,10 @@ public class BeetleService {
             }
             if (!Sex.FEMALE.getLabel().equals(mother.getSex())) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "母個体にはメスの生体のみ選択できます");
+            }
+            if (form.getEmergenceDate() != null && mother.getEmergenceDate() != null
+                    && !YearMonth.parse(form.getEmergenceDate()).isAfter(YearMonth.parse(mother.getEmergenceDate()))) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "羽化時期は母個体の羽化時期より後の日付を入力してください");
             }
             beetle.setMother(mother);
         } else {

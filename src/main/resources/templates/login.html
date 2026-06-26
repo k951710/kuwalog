@@ -1,36 +1,50 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>ログイン - クワログ</title>
+    <th:block th:replace="~{fragments/layout :: head('ログイン')}"></th:block>
 </head>
 <body>
 
-<h1>ログイン</h1>
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
 
-<div th:if="${param.registered}">
-    <p>登録が完了しました。ログインしてください。</p>
-</div>
-<div th:if="${param.logout}">
-    <p>ログアウトしました。</p>
-</div>
-<div th:if="${param.error}">
-    <p>ユーザー名またはパスワードが正しくありません。</p>
-</div>
+<div class="container d-flex justify-content-center" style="max-width:420px;">
+    <div style="width:100%;">
 
-<form th:action="@{/login}" method="post">
-    <div>
-        <label for="username">ユーザー名</label>
-        <input type="text" id="username" name="username" autocomplete="username">
+        <h1 class="h4 mb-4 text-center" style="letter-spacing:0.1em;">ログイン</h1>
+
+        <div th:if="${param.registered}" class="alert alert-success py-2 mb-3" style="background:#1a2e1a; border-color:#2d5a2d; color:#7ec87e; font-size:0.85rem;">
+            登録が完了しました。ログインしてください。
+        </div>
+        <div th:if="${param.logout}" class="mb-3" style="font-size:0.85rem; color:var(--kw-muted); text-align:center;">
+            ログアウトしました。
+        </div>
+        <div th:if="${param.error}" class="alert py-2 mb-3" style="background:#2e1a1a; border-color:#5a2d2d; color:#c87e7e; font-size:0.85rem;">
+            ユーザー名またはパスワードが正しくありません。
+        </div>
+
+        <div class="kw-card p-4">
+            <form th:action="@{/login}" method="post">
+                <div class="mb-3">
+                    <label class="form-label">ユーザー名</label>
+                    <input type="text" id="username" name="username" class="form-control" autocomplete="username">
+                </div>
+                <div class="mb-4">
+                    <label class="form-label">パスワード</label>
+                    <input type="password" id="password" name="password" class="form-control" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-kw-primary w-100">ログイン</button>
+            </form>
+        </div>
+
+        <p class="text-center mt-3" style="font-size:0.85rem; color:var(--kw-muted);">
+            アカウントをお持ちでない方は
+            <a th:href="@{/users/register}">新規登録</a>
+        </p>
+
     </div>
-    <div>
-        <label for="password">パスワード</label>
-        <input type="password" id="password" name="password" autocomplete="current-password">
-    </div>
-    <button type="submit">ログイン</button>
-</form>
+</div>
 
-<p><a th:href="@{/users/register}">アカウントを作成する</a></p>
-
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

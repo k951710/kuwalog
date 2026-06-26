@@ -1,89 +1,128 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security" lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title th:text="${profile.user.username} + ' - クワログ'"></title>
+    <th:block th:replace="~{fragments/layout :: head(${profile.user.username})}"></th:block>
 </head>
 <body>
 
-<div th:if="${profile.user.profileImageUrl != null}">
-    <img th:src="${profile.user.profileImageUrl}" alt="プロフィール画像" style="width:100px; height:100px; object-fit:cover;">
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container" style="max-width:860px;">
+
+    <!-- プロフィールヘッダー -->
+    <div class="d-flex align-items-center gap-4 mb-5">
+        <div>
+            <img th:if="${profile.user.profileImageUrl != null}"
+                 th:src="${profile.user.profileImageUrl}"
+                 alt="プロフィール画像"
+                 style="width:80px; height:80px; object-fit:cover; border-radius:50%; border:2px solid var(--kw-border);">
+            <div th:if="${profile.user.profileImageUrl == null}"
+                 style="width:80px; height:80px; border-radius:50%; background:var(--kw-surface); border:2px solid var(--kw-border); display:flex; align-items:center; justify-content:center; color:var(--kw-muted); font-size:1.5rem;">
+                &#128027;
+            </div>
+        </div>
+        <div>
+            <h1 class="h3 m-0" th:text="${profile.user.username}"></h1>
+            <p class="mt-1 mb-0" style="font-size:0.85rem; color:var(--kw-muted);">
+                登録日: <span th:text="${#temporals.format(profile.user.createdAt, 'yyyy/MM/dd')}"></span>
+            </p>
+        </div>
+        <div class="ms-auto">
+            <a th:if="${profile.user.username == loginUsername}"
+               th:href="@{/users/{u}/edit(u=${profile.user.username})}"
+               class="btn btn-sm btn-kw-outline">プロフィールを編集</a>
+        </div>
+    </div>
+
+    <!-- 自己紹介 -->
+    <div th:if="${profile.user.bio != null}" class="kw-card p-4 mb-4">
+        <p class="kw-section-title">自己紹介</p>
+        <p style="font-size:0.9rem; line-height:1.8; margin:0;" th:text="${profile.user.bio}"></p>
+    </div>
+
+    <!-- 評価サマリー -->
+    <div class="kw-card p-4 mb-4">
+        <p class="kw-section-title">評価サマリー</p>
+        <div th:if="${profile.reviewCount == 0}" style="color:var(--kw-muted); font-size:0.9rem;">
+            まだ評価がありません。
+        </div>
+        <div th:unless="${profile.reviewCount == 0}" class="d-flex gap-4">
+            <div>
+                <div style="font-size:1.8rem; font-weight:700;" th:text="${#numbers.formatDecimal(profile.avgRating, 1, 1)}"></div>
+                <div style="font-size:0.75rem; color:var(--kw-muted);">平均評価 / 5</div>
+            </div>
+            <div>
+                <div style="font-size:1.8rem; font-weight:700;" th:text="${profile.reviewCount}"></div>
+                <div style="font-size:0.75rem; color:var(--kw-muted);">総評価件数</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 受けた評価 -->
+    <div class="mb-4" th:unless="${#lists.isEmpty(profile.receivedReviews)}">
+        <p class="kw-section-title">受けた評価</p>
+        <div class="kw-card">
+            <table class="table kw-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-3">種別</th>
+                        <th class="py-3">評価</th>
+                        <th class="py-3">コメント</th>
+                        <th class="py-3">評価者</th>
+                        <th class="py-3">日時</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="r : ${profile.receivedReviews}">
+                        <td class="px-3 py-3" style="font-size:0.85rem;" th:text="${r.reviewType.label}"></td>
+                        <td class="py-3" th:text="${r.rating}"></td>
+                        <td class="py-3" style="font-size:0.85rem;" th:text="${r.comment ?: '-'}"></td>
+                        <td class="py-3">
+                            <a th:href="@{/users/{u}(u=${r.reviewer.username})}"
+                               th:text="${r.reviewer.username}" style="font-size:0.85rem;"></a>
+                        </td>
+                        <td class="py-3" style="font-size:0.8rem; color:var(--kw-muted);"
+                            th:text="${#temporals.format(r.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 投稿した生体 -->
+    <div>
+        <p class="kw-section-title">投稿した生体</p>
+        <div th:if="${#lists.isEmpty(profile.beetles)}" style="color:var(--kw-muted); font-size:0.9rem;">
+            投稿した生体はありません。
+        </div>
+        <div th:unless="${#lists.isEmpty(profile.beetles)}" class="kw-card">
+            <table class="table kw-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="py-3 px-3">名前</th>
+                        <th class="py-3">性別</th>
+                        <th class="py-3">ステージ</th>
+                        <th class="py-3">産地</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="b : ${profile.beetles}">
+                        <td class="px-3 py-3">
+                            <a th:href="@{/beetles/{id}(id=${b.id})}" th:text="${b.name}"></a>
+                        </td>
+                        <td class="py-3" th:text="${b.sex}"></td>
+                        <td class="py-3" th:text="${b.stage}"></td>
+                        <td class="py-3" th:text="${b.locality ?: '-'}"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
 </div>
 
-<h1 th:text="${profile.user.username}"></h1>
-
-<section>
-    <h2>基本情報</h2>
-    <p th:text="${profile.user.bio ?: '自己紹介はありません'}"></p>
-    <p>登録日: <span th:text="${#temporals.format(profile.user.createdAt, 'yyyy/MM/dd')}"></span></p>
-    <a th:if="${profile.user.username == loginUsername}"
-       th:href="@{/users/{u}/edit(u=${profile.user.username})}">プロフィールを編集</a>
-</section>
-
-<section>
-    <h2>評価サマリー</h2>
-    <div th:if="${profile.reviewCount == 0}">
-        <p>まだ評価がありません。</p>
-    </div>
-    <div th:unless="${profile.reviewCount == 0}">
-        <p>総評価件数: <strong th:text="${profile.reviewCount}"></strong> 件</p>
-        <p>平均評価: <strong th:text="${#numbers.formatDecimal(profile.avgRating, 1, 1)}"></strong> / 5</p>
-    </div>
-</section>
-
-<section>
-    <h2>受けた評価</h2>
-    <div th:if="${#lists.isEmpty(profile.receivedReviews)}">
-        <p>評価はありません。</p>
-    </div>
-    <table th:unless="${#lists.isEmpty(profile.receivedReviews)}">
-        <thead>
-            <tr>
-                <th>評価種別</th>
-                <th>評価点</th>
-                <th>コメント</th>
-                <th>評価者</th>
-                <th>日時</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="r : ${profile.receivedReviews}">
-                <td th:text="${r.reviewType.label}"></td>
-                <td th:text="${r.rating}"></td>
-                <td th:text="${r.comment ?: '-'}"></td>
-                <td><a th:href="@{/users/{u}(u=${r.reviewer.username})}" th:text="${r.reviewer.username}"></a></td>
-                <td th:text="${#temporals.format(r.createdAt, 'yyyy/MM/dd HH:mm')}"></td>
-            </tr>
-        </tbody>
-    </table>
-</section>
-
-<section>
-    <h2>投稿した生体</h2>
-    <div th:if="${#lists.isEmpty(profile.beetles)}">
-        <p>投稿した生体はありません。</p>
-    </div>
-    <table th:unless="${#lists.isEmpty(profile.beetles)}">
-        <thead>
-            <tr>
-                <th>名前</th>
-                <th>性別</th>
-                <th>ステージ</th>
-                <th>産地</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr th:each="b : ${profile.beetles}">
-                <td><a th:href="@{/beetles/{id}(id=${b.id})}" th:text="${b.name}"></a></td>
-                <td th:text="${b.sex}"></td>
-                <td th:text="${b.stage}"></td>
-                <td th:text="${b.locality ?: '-'}"></td>
-            </tr>
-        </tbody>
-    </table>
-</section>
-
-<a th:href="@{/beetles}">生体一覧に戻る</a>
-
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

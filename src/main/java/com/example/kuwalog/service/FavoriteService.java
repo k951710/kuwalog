@@ -3,6 +3,7 @@ package com.example.kuwalog.service;
 import com.example.kuwalog.entity.Beetle;
 import com.example.kuwalog.entity.Favorite;
 import com.example.kuwalog.entity.User;
+import java.util.List;
 import com.example.kuwalog.repository.BeetleRepository;
 import com.example.kuwalog.repository.FavoriteRepository;
 import com.example.kuwalog.repository.UserRepository;
@@ -48,6 +49,14 @@ public class FavoriteService {
     @Transactional(readOnly = true)
     public long countByBeetleId(Long beetleId) {
         return favoriteRepository.countByBeetleId(beetleId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Beetle> findFavoritedBeetles(String username) {
+        return userRepository.findByUsername(username)
+                .map(u -> favoriteRepository.findByUserIdWithBeetleOrderByCreatedAtDesc(u.getId())
+                        .stream().map(Favorite::getBeetle).toList())
+                .orElse(List.of());
     }
 
     @Transactional(readOnly = true)

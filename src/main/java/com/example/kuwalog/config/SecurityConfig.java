@@ -25,13 +25,14 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
             .authenticationProvider(authenticationProvider())
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/**"))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/users/register", "/login").permitAll()
+                .requestMatchers("/users/register", "/login", "/js/**", "/css/**", "/favicon.ico").permitAll()
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login
                 .loginPage("/login")
-                .defaultSuccessUrl("/", true)
+                .defaultSuccessUrl("/beetles", true)
                 .failureUrl("/login?error")
                 .permitAll()
             )

@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="ja">
+<head>
+    <th:block th:replace="~{fragments/layout :: head('チャット')}"></th:block>
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 220px);
+            min-height: 400px;
+        }
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .chat-bubble {
+            max-width: 70%;
+            padding: 0.6rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+        .chat-bubble-mine {
+            background-color: var(--kw-accent);
+            color: #fff;
+            align-self: flex-end;
+        }
+        .chat-bubble-other {
+            background-color: var(--kw-surface);
+            border: 1px solid var(--kw-border);
+            color: var(--kw-text);
+            align-self: flex-start;
+        }
+        .chat-meta {
+            font-size: 0.75rem;
+            color: var(--kw-muted);
+            margin-bottom: 2px;
+        }
+        .chat-input-area {
+            border-top: 1px solid var(--kw-border);
+            padding: 0.75rem 1rem;
+            display: flex;
+            gap: 0.5rem;
+            background: var(--kw-surface);
+        }
+        #messageInput {
+            flex: 1;
+            resize: none;
+            background-color: #252525;
+            border-color: var(--kw-border);
+            color: var(--kw-text);
+            border-radius: 4px;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.9rem;
+            border: 1px solid var(--kw-border);
+        }
+        #messageInput:focus {
+            outline: none;
+            border-color: var(--kw-accent);
+        }
+    </style>
+</head>
+<body>
+
+<nav th:replace="~{fragments/layout :: navbar}"></nav>
+
+<div class="container" style="max-width:700px;">
+
+    <nav class="mb-3" style="font-size:0.8rem; color:var(--kw-muted);">
+        <a th:href="@{/conversations}">メッセージ</a>
+        <span class="mx-2">/</span>
+        <a th:href="@{/beetles/{id}(id=${conversation.beetle.id})}" th:text="${conversation.beetle.name}"></a>
+    </nav>
+
+    <div class="kw-card p-3 mb-3" style="font-size:0.85rem; color:var(--kw-muted);">
+        <span th:text="${conversation.initiator.username == loginUsername ? conversation.owner.username : conversation.initiator.username}"></span>
+        との会話 —
+        <a th:href="@{/beetles/{id}(id=${conversation.beetle.id})}" th:text="${conversation.beetle.name}"></a>
+    </div>
+
+    <div class="kw-card" style="overflow:hidden;">
+        <div class="chat-container">
+            <div id="chatMessages" class="chat-messages">
+                <th:block th:each="m : ${messages}">
+                    <div th:if="${m.sender.username == loginUsername}" style="align-self:flex-end; text-align:right;">
+                        <div class="chat-meta" th:text="${m.createdAt != null ? #temporals.format(m.createdAt, 'yyyy/MM/dd HH:mm') : ''}"></div>
+                        <div class="chat-bubble chat-bubble-mine" th:text="${m.content}"></div>
+                    </div>
+                    <div th:unless="${m.sender.username == loginUsername}" style="align-self:flex-start;">
+                        <div class="chat-meta" th:text="${m.sender.username + ' · ' + (m.createdAt != null ? #temporals.format(m.createdAt, 'yyyy/MM/dd HH:mm') : '')}"></div>
+                        <div class="chat-bubble chat-bubble-other" th:text="${m.content}"></div>
+                    </div>
+                </th:block>
+            </div>
+            <div class="chat-input-area">
+                <textarea id="messageInput" rows="1" placeholder="メッセージを入力..."
+                          onkeydown="handleKey(event)"></textarea>
+                <button class="btn btn-kw-primary" onclick="sendMessage()">送信</button>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<footer th:replace="~{fragments/layout :: footer}"></footer>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+<script th:inline="javascript">
+    const conversationId = /*[[${conversation.id}]]*/ 0;
+    const loginUsername = /*[[${loginUsername}]]*/ '';
+
+    const chatMessages = document.getElementById('chatMessages');
+
+    function scrollToBottom() {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    scrollToBottom();
+
+    const socket = new SockJS('/ws');
+    const stompClient = Stomp.over(socket);
+    stompClient.debug = null;
+
+    stompClient.connect({}, function() {
+        stompClient.subscribe('/topic/conversation/' + conversationId, function(frame) {
+            const msg = JSON.parse(frame.body);
+            appendMessage(msg);
+            scrollToBottom();
+        });
+    });
+
+    function appendMessage(msg) {
+        const isMine = msg.senderUsername === loginUsername;
+        const wrapper = document.createElement('div');
+        wrapper.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
+        wrapper.style.textAlign = isMine ? 'right' : 'left';
+
+        const meta = document.createElement('div');
+        meta.className = 'chat-meta';
+        meta.textContent = isMine ? msg.createdAt : (msg.senderUsername + ' · ' + msg.createdAt);
+
+        const bubble = document.createElement('div');
+        bubble.className = 'chat-bubble ' + (isMine ? 'chat-bubble-mine' : 'chat-bubble-other');
+        bubble.textContent = msg.content;
+
+        wrapper.appendChild(meta);
+        wrapper.appendChild(bubble);
+        chatMessages.appendChild(wrapper);
+    }
+
+    function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const content = input.value.trim();
+        if (!content || !stompClient.connected) return;
+        stompClient.send('/app/chat.send', {}, JSON.stringify({
+            conversationId: conversationId,
+            content: content
+        }));
+        input.value = '';
+        input.style.height = 'auto';
+    }
+
+    function handleKey(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            sendMessage();
+        }
+    }
+</script>
+</body>
+</html>

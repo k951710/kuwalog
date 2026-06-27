@@ -34,6 +34,9 @@
             color: var(--kw-accent-light) !important;
             text-decoration: none;
         }
+        .navbar-toggler-icon {
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28224,224,224,0.85%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+        }
         .nav-link-kw {
             color: var(--kw-text) !important;
             font-size: 0.9rem;
@@ -118,10 +121,13 @@
 </th:block>
 
 <!-- ===== navbar フラグメント ===== -->
-<nav th:fragment="navbar" class="navbar navbar-kw px-4 py-3 mb-5">
+<nav th:fragment="navbar" class="navbar navbar-kw px-3 px-md-4 py-3 mb-5" style="position:relative;">
     <a class="navbar-brand-kw" th:href="@{/beetles}">KUWALOG</a>
-    <div class="d-flex align-items-center gap-3">
+
+    <!-- PC: 横並びメニュー -->
+    <div class="d-none d-md-flex align-items-center gap-3">
         <a class="nav-link-kw" th:href="@{/beetles}">生体一覧</a>
+        <a class="nav-link-kw" th:href="@{/ranking}">ランキング</a>
         <th:block th:if="${isAuthenticated}">
             <a class="nav-link-kw" th:href="@{/favorites}">★ お気に入り</a>
             <a class="nav-link-kw position-relative" th:href="@{/conversations}">
@@ -132,9 +138,19 @@
                       th:text="${unreadMessageCount}"></span>
             </a>
             <a class="nav-link-kw" th:href="@{/beetles/new}">投稿</a>
-            <a class="nav-link-kw"
-               th:href="@{/users/{u}(u=${loginUsername})}"
-               th:text="${loginUsername}"></a>
+            <a class="nav-link-kw d-flex align-items-center gap-2"
+               th:href="@{/users/{u}(u=${loginUsername})}">
+                <img th:if="${loginUserProfileImageUrl != null}"
+                     th:src="${loginUserProfileImageUrl}"
+                     alt="プロフィール"
+                     style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--kw-border);">
+                <span th:if="${loginUserProfileImageUrl == null}"
+                      style="width:24px; height:24px; border-radius:50%; background:var(--kw-border);
+                             display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem;">
+                    &#128027;
+                </span>
+                <span th:text="${loginUsername}"></span>
+            </a>
             <form th:action="@{/logout}" method="post" class="m-0">
                 <button type="submit" class="btn btn-sm btn-kw-outline">ログアウト</button>
             </form>
@@ -144,6 +160,70 @@
             <a class="btn btn-sm btn-kw-outline" th:href="@{/users/register}">新規登録</a>
         </th:block>
     </div>
+
+    <!-- スマホ: アカウント名 + ハンバーガーボタン -->
+    <div class="d-md-none d-flex align-items-center gap-2">
+        <a th:if="${isAuthenticated}" class="nav-link-kw d-flex align-items-center gap-2"
+           th:href="@{/users/{u}(u=${loginUsername})}">
+            <img th:if="${loginUserProfileImageUrl != null}"
+                 th:src="${loginUserProfileImageUrl}"
+                 alt="プロフィール"
+                 style="width:24px; height:24px; border-radius:50%; object-fit:cover; border:1px solid var(--kw-border);">
+            <span th:if="${loginUserProfileImageUrl == null}"
+                  style="width:24px; height:24px; border-radius:50%; background:var(--kw-border);
+                         display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem;">
+                &#128027;
+            </span>
+            <span th:text="${loginUsername}" style="font-size:0.9rem;"></span>
+        </a>
+        <button id="navToggle" class="border-0 bg-transparent p-1" aria-label="メニュー"
+                onclick="toggleNavMenu(event)">
+            <span class="navbar-toggler-icon" style="display:inline-block; width:1.5em; height:1.5em;"></span>
+        </button>
+    </div>
+
+    <!-- スマホ: ポップアップメニュー -->
+    <div id="navMenu"
+         style="display:none; position:absolute; top:100%; right:0; min-width:180px;
+                background:var(--kw-surface); border:1px solid var(--kw-border);
+                border-radius:4px; padding:0.75rem 1rem; z-index:1050;
+                box-shadow:0 4px 16px rgba(0,0,0,0.5);"
+         class="d-md-none">
+        <div class="d-flex flex-column gap-3">
+            <a class="nav-link-kw" th:href="@{/beetles}">生体一覧</a>
+            <a class="nav-link-kw" th:href="@{/ranking}">ランキング</a>
+            <th:block th:if="${isAuthenticated}">
+                <a class="nav-link-kw" th:href="@{/favorites}">★ お気に入り</a>
+                <a class="nav-link-kw position-relative" th:href="@{/conversations}">
+                    メッセージ
+                    <span th:if="${unreadMessageCount > 0}"
+                          class="badge rounded-pill ms-1"
+                          style="background-color:#e74c3c; font-size:0.65rem;"
+                          th:text="${unreadMessageCount}"></span>
+                </a>
+                <a class="nav-link-kw" th:href="@{/beetles/new}">投稿</a>
+                <form th:action="@{/logout}" method="post" class="m-0">
+                    <button type="submit" class="btn btn-sm btn-kw-outline w-100">ログアウト</button>
+                </form>
+            </th:block>
+            <th:block th:unless="${isAuthenticated}">
+                <a class="btn btn-sm btn-kw-outline" th:href="@{/login}">ログイン</a>
+                <a class="btn btn-sm btn-kw-outline" th:href="@{/users/register}">新規登録</a>
+            </th:block>
+        </div>
+    </div>
+
+    <script>
+        function toggleNavMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('navMenu');
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
+        document.addEventListener('click', function() {
+            const menu = document.getElementById('navMenu');
+            if (menu) menu.style.display = 'none';
+        });
+    </script>
 </nav>
 
 <!-- ===== footer フラグメント ===== -->

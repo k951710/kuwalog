@@ -2,6 +2,7 @@ package com.example.kuwalog.dto;
 
 import com.example.kuwalog.entity.enums.Classification;
 import com.example.kuwalog.entity.enums.Sex;
+import com.example.kuwalog.entity.enums.Species;
 import com.example.kuwalog.entity.enums.Stage;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
@@ -17,6 +18,8 @@ public class BeetleForm {
     private String name;
 
     private Classification classification;
+
+    private Species species;
 
     @NotNull
     private Sex sex;
@@ -39,11 +42,11 @@ public class BeetleForm {
     private String description;
 
     @DecimalMin(value = "0.0", inclusive = false)
-    @Digits(integer = 5, fraction = 1)
+    @Digits(integer = 3, fraction = 1, message = "入力できる数字は3桁までです")
     private BigDecimal sizeMm;
 
     @DecimalMin(value = "0.0", inclusive = false)
-    @Digits(integer = 5, fraction = 1)
+    @Digits(integer = 3, fraction = 1, message = "入力できる数字は3桁までです")
     private BigDecimal weightG;
 
     private Long fatherId;
@@ -51,6 +54,8 @@ public class BeetleForm {
 
     public Classification getClassification() { return classification; }
     public void setClassification(Classification classification) { this.classification = classification; }
+    public Species getSpecies() { return species; }
+    public void setSpecies(Species species) { this.species = species; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
     public Sex getSex() { return sex; }

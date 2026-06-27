@@ -6,6 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Pageable;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,4 +30,10 @@ public interface BeetleRepository extends JpaRepository<Beetle, Long> {
 
     @Query("SELECT b FROM Beetle b JOIN FETCH b.user ORDER BY b.createdAt DESC")
     List<Beetle> findAllWithUser();
+
+    @Query("SELECT b FROM Beetle b JOIN FETCH b.user WHERE b.species = :species AND b.sizeMm IS NOT NULL ORDER BY b.sizeMm DESC")
+    List<Beetle> findRankingBySpecies(@Param("species") String species, Pageable pageable);
+
+    @Query("SELECT b FROM Beetle b JOIN FETCH b.user WHERE b.species IN :speciesList AND b.sizeMm IS NOT NULL ORDER BY b.sizeMm DESC")
+    List<Beetle> findRankingTop(@Param("speciesList") Collection<String> speciesList, Pageable pageable);
 }

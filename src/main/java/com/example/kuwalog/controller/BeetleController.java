@@ -4,7 +4,9 @@ import com.example.kuwalog.dto.BeetleForm;
 import com.example.kuwalog.entity.Beetle;
 import com.example.kuwalog.entity.enums.Classification;
 import com.example.kuwalog.entity.enums.Sex;
+import com.example.kuwalog.entity.enums.Species;
 import com.example.kuwalog.entity.enums.Stage;
+import com.example.kuwalog.service.RankingService;
 import com.example.kuwalog.entity.BeetleImage;
 import com.example.kuwalog.repository.BeetleImageRepository;
 import com.example.kuwalog.service.BeetleImageService;
@@ -32,14 +34,17 @@ public class BeetleController {
     private final BeetleImageService beetleImageService;
     private final BeetleImageRepository beetleImageRepository;
     private final com.example.kuwalog.service.FavoriteService favoriteService;
+    private final RankingService rankingService;
 
     public BeetleController(BeetleService beetleService, BeetleImageService beetleImageService,
                             BeetleImageRepository beetleImageRepository,
-                            com.example.kuwalog.service.FavoriteService favoriteService) {
+                            com.example.kuwalog.service.FavoriteService favoriteService,
+                            RankingService rankingService) {
         this.beetleService = beetleService;
         this.beetleImageService = beetleImageService;
         this.beetleImageRepository = beetleImageRepository;
         this.favoriteService = favoriteService;
+        this.rankingService = rankingService;
     }
 
     @org.springframework.web.bind.annotation.InitBinder
@@ -48,6 +53,11 @@ public class BeetleController {
         binder.registerCustomEditor(Classification.class, new java.beans.PropertyEditorSupport() {
             @Override public void setAsText(String text) {
                 setValue(text == null || text.isEmpty() ? null : Classification.valueOf(text));
+            }
+        });
+        binder.registerCustomEditor(Species.class, new java.beans.PropertyEditorSupport() {
+            @Override public void setAsText(String text) {
+                setValue(text == null || text.isEmpty() ? null : Species.valueOf(text));
             }
         });
     }
@@ -75,6 +85,7 @@ public class BeetleController {
         model.addAttribute("selectedSex", sex);
         model.addAttribute("selectedStage", stage);
         model.addAttribute("selectedLocality", locality);
+        model.addAttribute("top3", rankingService.getTop3());
         return "beetles/list";
     }
 
@@ -126,6 +137,11 @@ public class BeetleController {
         form.setDescription(beetle.getDescription());
         form.setSizeMm(beetle.getSizeMm());
         form.setWeightG(beetle.getWeightG());
+        if (beetle.getSpecies() != null) {
+            for (Species s : Species.values()) {
+                if (s.getLabel().equals(beetle.getSpecies())) { form.setSpecies(s); break; }
+            }
+        }
         if (beetle.getFather() != null) form.setFatherId(beetle.getFather().getId());
         if (beetle.getMother() != null) form.setMotherId(beetle.getMother().getId());
 
@@ -192,6 +208,7 @@ public class BeetleController {
 
     private void addFormAttributes(Model model, String username, Long excludeId) {
         model.addAttribute("classificationValues", Classification.values());
+        model.addAttribute("speciesValues", Species.values());
         model.addAttribute("sexValues", Sex.values());
         model.addAttribute("stageValues", Stage.values());
         List<Beetle> fathers = beetleService.findParentCandidates(Sex.MALE, username);

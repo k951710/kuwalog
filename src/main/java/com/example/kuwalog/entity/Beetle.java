@@ -44,6 +44,9 @@ public class Beetle {
     @Column(name = "classification", length = 20)
     private String classification;
 
+    @Column(name = "species", length = 20)
+    private String species;
+
     @Column(name = "breeder_name", length = 50)
     private String breederName;
 
@@ -90,6 +93,8 @@ public class Beetle {
     public void setEmergenceDate(String emergenceDate) { this.emergenceDate = emergenceDate; }
     public String getClassification() { return classification; }
     public void setClassification(String classification) { this.classification = classification; }
+    public String getSpecies() { return species; }
+    public void setSpecies(String species) { this.species = species; }
     public String getBreederName() { return breederName; }
     public void setBreederName(String breederName) { this.breederName = breederName; }
     public String getStage() { return stage; }

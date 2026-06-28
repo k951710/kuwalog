@@ -144,8 +144,13 @@ public class BeetleService {
     // post/updateで共通のフォーム→エンティティ反映処理。父母バリデーションもここで行う
     private void applyForm(Beetle beetle, BeetleForm form) {
         beetle.setName(form.getName());
-        beetle.setClassification(form.getClassification() != null ? form.getClassification().getLabel() : null);
-        beetle.setSpecies(form.getSpecies() != null ? form.getSpecies().getLabel() : null);
+        if (form.getSpecies() != null) {
+            beetle.setSpecies(form.getSpecies().getLabel());
+            beetle.setClassification(form.getSpecies().getCategory());
+        } else {
+            beetle.setSpecies(null);
+            beetle.setClassification(null);
+        }
         beetle.setSex(form.getSex().getLabel());
         beetle.setStage(form.getStage().getLabel());
         beetle.setGeneration(form.getGeneration());

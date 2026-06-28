@@ -41,20 +41,33 @@
 
             <p class="kw-section-title">基本情報</p>
 
-            <div class="row g-3 mb-3">
-                <div class="col">
-                    <label class="form-label">分類</label>
-                    <select id="classification" th:field="*{classification}" class="form-select">
-                        <option value="">選択してください</option>
-                        <option th:each="c : ${classificationValues}" th:value="${c}" th:text="${c.label}"></option>
-                    </select>
+            <div class="mb-3">
+                <label class="form-label">分類</label>
+                <div class="row g-2">
+                    <div class="col-auto">
+                        <select id="speciesOrigin" class="form-select form-select-sm" onchange="filterSpecies()">
+                            <option value="">産地区分</option>
+                            <option value="国内">国内種</option>
+                            <option value="海外">海外種</option>
+                        </select>
+                    </div>
+                    <div class="col-auto">
+                        <select id="speciesCategory" class="form-select form-select-sm" onchange="filterSpecies()" disabled>
+                            <option value="">カテゴリ</option>
+                            <option value="クワガタ">クワガタ</option>
+                            <option value="カブトムシ">カブトムシ</option>
+                        </select>
+                    </div>
+                    <div class="col">
+                        <select id="speciesSelect" class="form-select form-select-sm" onchange="applySpecies(this)" disabled>
+                            <option value="">種を選択</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col">
-                    <label class="form-label">種</label>
-                    <select id="species" th:field="*{species}" class="form-select">
-                        <option value="">選択してください</option>
-                        <option th:each="s : ${speciesValues}" th:value="${s}" th:text="${s.label}"></option>
-                    </select>
+                <input type="hidden" id="species" th:field="*{species}">
+                <div id="species-data" style="display:none">
+                    <span th:each="s : ${speciesValues}"
+                          th:attr="data-value=${s.name()},data-label=${s.label},data-origin=${s.origin},data-category=${s.category}"></span>
                 </div>
             </div>
 
@@ -92,8 +105,11 @@
                         <select id="gen_prefix" class="form-select" onchange="updateGeneration()">
                             <option value="">-</option>
                             <option value="WD">WD</option>
+                            <option value="WF1">WF1</option>
                             <option value="F">F</option>
                             <option value="CBF">CBF</option>
+                            <option value="CB">CB</option>
+                            <option value="不明">不明</option>
                         </select>
                         <select id="gen_num" class="form-select" onchange="updateGeneration()" style="display:none;">
                             <option th:each="i : ${#numbers.sequence(1, 10)}" th:value="${i}" th:text="${i}"></option>
@@ -195,6 +211,53 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script th:src="@{/js/parentCascade.js}"></script>
 <script>
+// 種カスケード
+const speciesMeta = Array.from(document.querySelectorAll('#species-data span')).map(el => ({
+    value: el.dataset.value,
+    label: el.dataset.label,
+    origin: el.dataset.origin,
+    category: el.dataset.category
+}));
+
+function filterSpecies() {
+    const origin = document.getElementById('speciesOrigin').value;
+    const category = document.getElementById('speciesCategory').value;
+    const catSel = document.getElementById('speciesCategory');
+    const spSel = document.getElementById('speciesSelect');
+
+    catSel.disabled = !origin;
+    spSel.disabled = !origin || !category;
+
+    spSel.innerHTML = '<option value="">種を選択</option>';
+    if (!origin || !category) return;
+
+    speciesMeta
+        .filter(s => s.origin === origin && s.category === category)
+        .forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.value;
+            opt.textContent = s.label;
+            spSel.appendChild(opt);
+        });
+}
+
+function applySpecies(sel) {
+    document.getElementById('species').value = sel.value;
+}
+
+// 既存の種値をカスケードに復元
+(function restoreSpecies() {
+    const current = document.getElementById('species').value;
+    if (!current) return;
+    const found = speciesMeta.find(s => s.value === current);
+    if (!found) return;
+    document.getElementById('speciesOrigin').value = found.origin;
+    filterSpecies();
+    document.getElementById('speciesCategory').value = found.category;
+    filterSpecies();
+    document.getElementById('speciesSelect').value = found.value;
+})();
+
 var fatherData = readCandidates('father-data');
 var motherData = readCandidates('mother-data');
 initCascade('father', fatherData, 'fatherId');
@@ -204,15 +267,14 @@ function updateGeneration() {
     var prefix = document.getElementById('gen_prefix').value;
     var numSel = document.getElementById('gen_num');
     var genField = document.getElementById('generation');
-    if (prefix === 'WD') {
-        numSel.style.display = 'none';
-        genField.value = 'WD';
-    } else if (prefix === '') {
-        numSel.style.display = 'none';
+    var needsNum = prefix === 'F' || prefix === 'CBF';
+    numSel.style.display = needsNum ? '' : 'none';
+    if (!prefix) {
         genField.value = '';
-    } else {
-        numSel.style.display = '';
+    } else if (needsNum) {
         genField.value = prefix + numSel.value;
+    } else {
+        genField.value = prefix;
     }
 }
 
@@ -222,8 +284,8 @@ function updateGeneration() {
     if (!val) return;
     var prefix = document.getElementById('gen_prefix');
     var numSel = document.getElementById('gen_num');
-    if (val === 'WD') {
-        prefix.value = 'WD';
+    if (val === 'WD' || val === 'WF1' || val === 'CB' || val === '不明') {
+        prefix.value = val;
     } else if (val.startsWith('CBF')) {
         prefix.value = 'CBF';
         numSel.value = val.replace('CBF', '');

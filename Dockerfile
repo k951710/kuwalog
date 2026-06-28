@@ -1,11 +1,8 @@
-FROM eclipse-temurin:21-jdk AS build
+FROM gradle:8.10-jdk21 AS build
 WORKDIR /app
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle .
-COPY settings.gradle .
+COPY build.gradle settings.gradle ./
 COPY src src
-RUN chmod +x gradlew && ./gradlew bootJar -x test
+RUN gradle bootJar -x test --no-daemon
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app

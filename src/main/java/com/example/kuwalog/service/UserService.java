@@ -15,7 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 @Service
 public class UserService {
 
-    private static final long MAX_PROFILE_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
+    private static final long MAX_PROFILE_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,7 +46,7 @@ public class UserService {
 
         if (profileImage != null && !profileImage.isEmpty()) {
             if (profileImage.getSize() > MAX_PROFILE_IMAGE_BYTES) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "画像は2MB以下にしてください");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "画像は10MB以下にしてください");
             }
             String url = imageStorageService.upload(profileImage, "kuwalog/profiles");
             user.setProfileImageUrl(url);

@@ -106,6 +106,22 @@
                 </form>
             </div>
 
+            <!-- 投稿者 -->
+            <a th:href="@{/users/{u}(u=${beetle.user.username})}"
+               class="d-inline-flex align-items-center gap-2 mb-3 text-decoration-none"
+               style="color:var(--kw-text);">
+                <img th:if="${beetle.user.profileImageUrl != null}"
+                     th:src="${beetle.user.profileImageUrl}"
+                     alt="プロフィール"
+                     style="width:32px; height:32px; border-radius:50%; object-fit:cover; border:1px solid var(--kw-border);">
+                <span th:if="${beetle.user.profileImageUrl == null}"
+                      style="width:32px; height:32px; border-radius:50%; background:var(--kw-border);
+                             display:inline-flex; align-items:center; justify-content:center; font-size:0.8rem;">
+                    &#128027;
+                </span>
+                <span th:text="${beetle.user.username}" style="font-size:0.9rem;"></span>
+            </a>
+
             <!-- 説明文 -->
             <div th:if="${beetle.description != null}" class="mb-4">
                 <p class="kw-section-title">説明</p>

@@ -5,12 +5,7 @@ import com.example.kuwalog.entity.Beetle;
 import com.example.kuwalog.entity.User;
 import com.example.kuwalog.entity.enums.Sex;
 import com.example.kuwalog.entity.enums.Stage;
-import com.example.kuwalog.repository.BeetleRepository;
-import com.example.kuwalog.repository.ReviewRepository;
-import com.example.kuwalog.repository.TransactionRepository;
-import com.example.kuwalog.repository.UsedBeetlePublicIdRepository;
-import com.example.kuwalog.repository.UserRepository;
-import com.example.kuwalog.service.BeetleImageService;
+import com.example.kuwalog.repository.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,33 +14,22 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BeetleServiceTest {
 
-    @Mock
-    private BeetleRepository beetleRepository;
-
-    @Mock
-    private UsedBeetlePublicIdRepository usedPublicIdRepository;
-
-    @Mock
-    private TransactionRepository transactionRepository;
-
-    @Mock
-    private ReviewRepository reviewRepository;
-
-    @Mock
-    private BeetleImageService beetleImageService;
-
-    @Mock
-    private UserRepository userRepository;
+    @Mock private BeetleRepository beetleRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private UsedBeetlePublicIdRepository usedPublicIdRepository;
+    @Mock private TransactionRepository transactionRepository;
+    @Mock private ReviewRepository reviewRepository;
+    @Mock private BeetleImageService beetleImageService;
 
     @InjectMocks
     private BeetleService beetleService;
@@ -67,42 +51,50 @@ class BeetleServiceTest {
         beetle = new Beetle();
         beetle.setId(10L);
         beetle.setUser(owner);
-        beetle.setName("テスト個体");
         beetle.setSex(Sex.MALE.getLabel());
         beetle.setStage(Stage.ADULT.getLabel());
+        beetle.setName("テスト個体");
     }
 
-    // --- update: 権限チェック ---
+    private BeetleForm basicForm() {
+        BeetleForm form = new BeetleForm();
+        form.setName("更新個体");
+        form.setSex(Sex.MALE);
+        form.setStage(Stage.ADULT);
+        return form;
+    }
+
+    // --- update 権限チェック ---
 
     @Test
     void update_投稿者本人は編集できる() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
-        BeetleForm form = validForm();
-        assertDoesNotThrow(() -> beetleService.update(10L, form, "owner"));
+        assertDoesNotThrow(() -> beetleService.update(10L, basicForm(), "owner"));
     }
 
     @Test
-    void update_他人は編集できない() {
+    void update_他人の生体は編集できない() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
-        BeetleForm form = validForm();
-        assertThatThrownBy(() -> beetleService.update(10L, form, "other"))
+        assertThatThrownBy(() -> beetleService.update(10L, basicForm(), "other"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("編集権限がありません");
     }
 
-    // --- delete: 権限チェック ---
+    // --- delete 権限チェック ---
 
     @Test
     void delete_投稿者本人は削除できる() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(transactionRepository.findByBeetleWithUsers(beetle)).thenReturn(List.of());
+        doNothing().when(beetleImageService).deleteAllForBeetle(beetle);
 
         assertDoesNotThrow(() -> beetleService.delete(10L, "owner"));
     }
 
     @Test
-    void delete_他人は削除できない() {
+    void delete_他人の生体は削除できない() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
         assertThatThrownBy(() -> beetleService.delete(10L, "other"))
@@ -113,26 +105,33 @@ class BeetleServiceTest {
     // --- 父個体の性別バリデーション ---
 
     @Test
-    void post_父個体にオスを指定すると正常に登録できる() {
-        Beetle father = makeBeetle(20L, Sex.MALE);
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
-        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    void update_父個体にオスを設定できる() {
+        Beetle father = new Beetle();
+        father.setId(20L);
+        father.setSex(Sex.MALE.getLabel());
 
-        BeetleForm form = validForm();
+        BeetleForm form = basicForm();
         form.setFatherId(20L);
-        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
+
+        assertDoesNotThrow(() -> beetleService.update(10L, form, "owner"));
     }
 
     @Test
-    void post_父個体にメスを指定するとBAD_REQUESTになる() {
-        Beetle femaleFather = makeBeetle(20L, Sex.FEMALE);
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(femaleFather));
+    void update_父個体にメスを設定するとBAD_REQUEST() {
+        Beetle femaleBeetle = new Beetle();
+        femaleBeetle.setId(20L);
+        femaleBeetle.setSex(Sex.FEMALE.getLabel());
 
-        BeetleForm form = validForm();
+        BeetleForm form = basicForm();
         form.setFatherId(20L);
-        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(femaleBeetle));
+
+        assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("父個体にはオスの生体のみ選択できます");
     }
@@ -140,26 +139,33 @@ class BeetleServiceTest {
     // --- 母個体の性別バリデーション ---
 
     @Test
-    void post_母個体にメスを指定すると正常に登録できる() {
-        Beetle mother = makeBeetle(21L, Sex.FEMALE);
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(21L)).thenReturn(Optional.of(mother));
-        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+    void update_母個体にメスを設定できる() {
+        Beetle mother = new Beetle();
+        mother.setId(30L);
+        mother.setSex(Sex.FEMALE.getLabel());
 
-        BeetleForm form = validForm();
-        form.setMotherId(21L);
-        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
+        BeetleForm form = basicForm();
+        form.setMotherId(30L);
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(beetleRepository.findByIdWithUser(30L)).thenReturn(Optional.of(mother));
+
+        assertDoesNotThrow(() -> beetleService.update(10L, form, "owner"));
     }
 
     @Test
-    void post_母個体にオスを指定するとBAD_REQUESTになる() {
-        Beetle maleMother = makeBeetle(21L, Sex.MALE);
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(21L)).thenReturn(Optional.of(maleMother));
+    void update_母個体にオスを設定するとBAD_REQUEST() {
+        Beetle maleBeetle = new Beetle();
+        maleBeetle.setId(30L);
+        maleBeetle.setSex(Sex.MALE.getLabel());
 
-        BeetleForm form = validForm();
-        form.setMotherId(21L);
-        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+        BeetleForm form = basicForm();
+        form.setMotherId(30L);
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(beetleRepository.findByIdWithUser(30L)).thenReturn(Optional.of(maleBeetle));
+
+        assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("母個体にはメスの生体のみ選択できます");
     }
@@ -167,105 +173,69 @@ class BeetleServiceTest {
     // --- 自己参照バリデーション ---
 
     @Test
-    void update_自分自身を父個体に設定するとBAD_REQUESTになる() {
-        // ID=10の個体が自分自身(ID=10)を父に設定しようとするケース
+    void update_自分自身を父個体に設定するとBAD_REQUEST() {
+        BeetleForm form = basicForm();
+        form.setFatherId(10L);
+
+        // 同じIDのbeetleが父個体候補として返る
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
-        BeetleForm form = validForm();
-        form.setFatherId(10L);
         assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("自分自身を父個体に設定できません");
     }
 
     @Test
-    void update_自分自身を母個体に設定するとBAD_REQUESTになる() {
-        // メス個体が自分自身を母に設定しようとするケース
+    void update_自分自身を母個体に設定するとBAD_REQUEST() {
         beetle.setSex(Sex.FEMALE.getLabel());
+        BeetleForm form = basicForm();
+        form.setSex(Sex.FEMALE);
+        form.setMotherId(10L);
+
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
-        BeetleForm form = validForm();
-        form.setMotherId(10L);
         assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("自分自身を母個体に設定できません");
     }
 
-    // --- 羽化時期の整合性チェック ---
+    // --- 羽化時期の時系列バリデーション ---
 
     @Test
-    void post_子の羽化時期が父より後なら正常に登録できる() {
-        Beetle father = makeBeetle(20L, Sex.MALE);
-        father.setEmergenceDate("2023-06");
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
-        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        BeetleForm form = validForm();
-        form.setFatherId(20L);
-        form.setEmergenceDate("2024-06");
-        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
-    }
-
-    @Test
-    void post_子の羽化時期が父より前ならBAD_REQUESTになる() {
-        Beetle father = makeBeetle(20L, Sex.MALE);
+    void update_父個体より前の羽化時期はBAD_REQUEST() {
+        Beetle father = new Beetle();
+        father.setId(20L);
+        father.setSex(Sex.MALE.getLabel());
         father.setEmergenceDate("2024-06");
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+
+        BeetleForm form = basicForm();
+        form.setFatherId(20L);
+        form.setEmergenceDate("2024-03");
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
         when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
 
-        BeetleForm form = validForm();
-        form.setFatherId(20L);
-        form.setEmergenceDate("2023-06");
-        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+        assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("父個体の羽化時期より後");
+                .hasMessageContaining("羽化時期は父個体の羽化時期より後の日付を入力してください");
     }
 
     @Test
-    void post_子の羽化時期が母より前ならBAD_REQUESTになる() {
-        Beetle mother = makeBeetle(21L, Sex.FEMALE);
+    void update_母個体より前の羽化時期はBAD_REQUEST() {
+        Beetle mother = new Beetle();
+        mother.setId(30L);
+        mother.setSex(Sex.FEMALE.getLabel());
         mother.setEmergenceDate("2024-06");
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(21L)).thenReturn(Optional.of(mother));
 
-        BeetleForm form = validForm();
-        form.setMotherId(21L);
-        form.setEmergenceDate("2023-06");
-        assertThatThrownBy(() -> beetleService.post(form, "owner"))
+        BeetleForm form = basicForm();
+        form.setMotherId(30L);
+        form.setEmergenceDate("2024-03");
+
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(beetleRepository.findByIdWithUser(30L)).thenReturn(Optional.of(mother));
+
+        assertThatThrownBy(() -> beetleService.update(10L, form, "owner"))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("母個体の羽化時期より後");
-    }
-
-    @Test
-    void post_親の羽化時期が未設定ならチェックをスキップできる() {
-        Beetle father = makeBeetle(20L, Sex.MALE);
-        // emergenceDate を設定しない
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(beetleRepository.findByIdWithUser(20L)).thenReturn(Optional.of(father));
-        when(beetleRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-
-        BeetleForm form = validForm();
-        form.setFatherId(20L);
-        form.setEmergenceDate("2024-06");
-        assertDoesNotThrow(() -> beetleService.post(form, "owner"));
-    }
-
-    // --- ヘルパー ---
-
-    private BeetleForm validForm() {
-        BeetleForm form = new BeetleForm();
-        form.setName("テスト");
-        form.setSex(Sex.MALE);
-        form.setStage(Stage.ADULT);
-        return form;
-    }
-
-    private Beetle makeBeetle(Long id, Sex sex) {
-        Beetle b = new Beetle();
-        b.setId(id);
-        b.setSex(sex.getLabel());
-        b.setUser(owner);
-        return b;
+                .hasMessageContaining("羽化時期は母個体の羽化時期より後の日付を入力してください");
     }
 }

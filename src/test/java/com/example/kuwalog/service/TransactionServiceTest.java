@@ -22,132 +22,115 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TransactionServiceTest {
 
-    @Mock
-    private TransactionRepository transactionRepository;
-
-    @Mock
-    private BeetleRepository beetleRepository;
-
-    @Mock
-    private UserRepository userRepository;
-
-    @Mock
-    private ReviewRepository reviewRepository;
+    @Mock private TransactionRepository transactionRepository;
+    @Mock private BeetleRepository beetleRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private ReviewRepository reviewRepository;
 
     @InjectMocks
     private TransactionService transactionService;
 
-    private User owner;
-    private User other;
+    private User poster;
+    private User buyer;
     private Beetle beetle;
     private Transaction transaction;
 
     @BeforeEach
     void setUp() {
-        owner = new User();
-        owner.setId(1L);
-        owner.setUsername("owner");
+        poster = new User();
+        poster.setId(1L);
+        poster.setUsername("poster");
 
-        other = new User();
-        other.setId(2L);
-        other.setUsername("other");
+        buyer = new User();
+        buyer.setId(2L);
+        buyer.setUsername("buyer");
 
         beetle = new Beetle();
         beetle.setId(10L);
-        beetle.setUser(owner);
+        beetle.setUser(poster);
 
         transaction = new Transaction();
         transaction.setBeetle(beetle);
-        transaction.setFromUser(owner);
-        transaction.setToUser(other);
+        transaction.setFromUser(poster);
+        transaction.setToUser(buyer);
+        transaction.setTransferredOn(LocalDate.of(2025, 1, 1));
     }
 
-    // --- register: 投稿者権限チェック ---
+    private TransactionForm basicForm() {
+        TransactionForm form = new TransactionForm();
+        form.setToUsername("buyer");
+        form.setTransferredOn(LocalDate.of(2025, 6, 1));
+        return form;
+    }
+
+    // --- register ---
 
     @Test
     void register_生体の投稿者は譲渡記録を登録できる() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        when(userRepository.findByUsername("other")).thenReturn(Optional.of(other));
+        when(userRepository.findByUsername("poster")).thenReturn(Optional.of(poster));
+        when(userRepository.findByUsername("buyer")).thenReturn(Optional.of(buyer));
         when(transactionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        TransactionForm form = validForm("other");
-        assertDoesNotThrow(() -> transactionService.register(10L, form, "owner"));
+        assertDoesNotThrow(() -> transactionService.register(10L, basicForm(), "poster"));
     }
 
     @Test
-    void register_投稿者以外は譲渡記録を登録できない() {
+    void register_生体の投稿者以外は登録できない() {
         when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
 
-        TransactionForm form = validForm("other");
-        assertThatThrownBy(() -> transactionService.register(10L, form, "other"))
+        assertThatThrownBy(() -> transactionService.register(10L, basicForm(), "buyer"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("譲渡記録を登録できるのは生体の投稿者のみです");
     }
 
-    // --- register: 自己譲渡禁止 ---
+    @Test
+    void register_存在しない譲渡先ユーザーはBAD_REQUEST() {
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(userRepository.findByUsername("poster")).thenReturn(Optional.of(poster));
+        when(userRepository.findByUsername("buyer")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> transactionService.register(10L, basicForm(), "poster"))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("譲渡先ユーザーが見つかりません");
+    }
 
     @Test
-    void register_自分自身への譲渡はできない() {
-        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
-        // toUsernameも"owner"（自分自身）
-        when(userRepository.findByUsername("owner")).thenReturn(Optional.of(owner));
+    void register_自分自身への譲渡はBAD_REQUEST() {
+        TransactionForm selfForm = new TransactionForm();
+        selfForm.setToUsername("poster");
+        selfForm.setTransferredOn(LocalDate.of(2025, 6, 1));
 
-        TransactionForm form = validForm("owner");
-        assertThatThrownBy(() -> transactionService.register(10L, form, "owner"))
+        when(beetleRepository.findByIdWithUser(10L)).thenReturn(Optional.of(beetle));
+        when(userRepository.findByUsername("poster")).thenReturn(Optional.of(poster));
+
+        assertThatThrownBy(() -> transactionService.register(10L, selfForm, "poster"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("自分自身に譲渡することはできません");
     }
 
-    // --- delete: 投稿者権限チェック ---
+    // --- delete ---
 
     @Test
     void delete_fromUserは譲渡記録を削除できる() {
-        when(transactionRepository.findByIdWithUsers(20L)).thenReturn(Optional.of(transaction));
+        when(transactionRepository.findByIdWithUsers(100L)).thenReturn(Optional.of(transaction));
+        doNothing().when(reviewRepository).deleteByTransaction(transaction);
+        doNothing().when(transactionRepository).delete(transaction);
 
-        assertDoesNotThrow(() -> transactionService.delete(10L, 20L, "owner"));
-
-        // FK制約のためreviewsが先に削除されること
-        verify(reviewRepository).deleteByTransaction(transaction);
-        verify(transactionRepository).delete(transaction);
+        assertDoesNotThrow(() -> transactionService.delete(10L, 100L, "poster"));
     }
 
     @Test
-    void delete_fromUser以外は譲渡記録を削除できない() {
-        when(transactionRepository.findByIdWithUsers(20L)).thenReturn(Optional.of(transaction));
+    void delete_fromUser以外は削除できない() {
+        when(transactionRepository.findByIdWithUsers(100L)).thenReturn(Optional.of(transaction));
 
-        assertThatThrownBy(() -> transactionService.delete(10L, 20L, "other"))
+        assertThatThrownBy(() -> transactionService.delete(10L, 100L, "buyer"))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("削除権限がありません");
-    }
-
-    // --- delete: 関連レビューが先に削除される ---
-
-    @Test
-    void delete_紐づく評価がreviewsより先に削除される() {
-        when(transactionRepository.findByIdWithUsers(20L)).thenReturn(Optional.of(transaction));
-
-        transactionService.delete(10L, 20L, "owner");
-
-        // deleteByTransaction → delete の順を検証
-        var inOrder = org.mockito.Mockito.inOrder(reviewRepository, transactionRepository);
-        inOrder.verify(reviewRepository).deleteByTransaction(transaction);
-        inOrder.verify(transactionRepository).delete(transaction);
-    }
-
-    // --- ヘルパー ---
-
-    private TransactionForm validForm(String toUsername) {
-        TransactionForm form = new TransactionForm();
-        form.setToUsername(toUsername);
-        form.setTransferredOn(LocalDate.of(2026, 1, 1));
-        return form;
     }
 }

@@ -96,27 +96,29 @@
         <div th:if="${#lists.isEmpty(profile.beetles)}" style="color:var(--kw-muted); font-size:0.9rem;">
             投稿した生体はありません。
         </div>
-        <div th:unless="${#lists.isEmpty(profile.beetles)}" class="kw-card">
-            <table class="table kw-table mb-0">
-                <thead>
-                    <tr>
-                        <th class="py-3 px-3">名前</th>
-                        <th class="py-3">性別</th>
-                        <th class="py-3">ステージ</th>
-                        <th class="py-3">産地</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="b : ${profile.beetles}">
-                        <td class="px-3 py-3">
-                            <a th:href="@{/beetles/{id}(id=${b.id})}" th:text="${b.name}"></a>
-                        </td>
-                        <td class="py-3" th:text="${b.sex}"></td>
-                        <td class="py-3" th:text="${b.stage}"></td>
-                        <td class="py-3" th:text="${b.locality ?: '-'}"></td>
-                    </tr>
-                </tbody>
-            </table>
+        <div th:unless="${#lists.isEmpty(profile.beetles)}"
+             class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-3">
+            <div th:each="b : ${profile.beetles}" class="col">
+                <a th:href="@{/beetles/{id}(id=${b.id})}" class="text-decoration-none">
+                    <div class="position-relative overflow-hidden"
+                         style="border-radius:6px; aspect-ratio:1; background:var(--kw-surface); border:1px solid var(--kw-border);">
+                        <img th:if="${imageMap[b.id] != null}"
+                             th:src="${imageMap[b.id]}"
+                             alt="生体画像"
+                             style="width:100%; height:100%; object-fit:cover;">
+                        <img th:if="${imageMap[b.id] == null}"
+                             th:src="@{/オオクワシルエット.png}"
+                             alt="画像なし"
+                             style="width:100%; height:100%; object-fit:contain; padding:0.5rem; opacity:0.3;">
+                        <div style="position:absolute; bottom:0; left:0; right:0;
+                                    background:linear-gradient(transparent, rgba(0,0,0,0.65));
+                                    padding:0.5rem 0.5rem 0.4rem;
+                                    color:#fff; font-size:0.8rem; font-weight:600;
+                                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"
+                             th:text="${b.name}"></div>
+                    </div>
+                </a>
+            </div>
         </div>
     </div>
 

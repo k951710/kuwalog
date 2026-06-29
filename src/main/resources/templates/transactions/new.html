@@ -24,8 +24,18 @@
               th:object="${transactionForm}" method="post">
 
             <div class="mb-3">
-                <label class="form-label">譲渡先ユーザー名</label>
-                <input type="text" id="toUsername" th:field="*{toUsername}" class="form-control">
+                <label class="form-label">譲渡先ユーザー</label>
+                <div th:if="${#lists.isEmpty(inquirers)}"
+                     class="form-control" style="color:var(--kw-muted); background:var(--kw-surface); cursor:default;">
+                    問い合わせ済みのユーザーがいません
+                </div>
+                <select th:unless="${#lists.isEmpty(inquirers)}"
+                        id="toUsername" th:field="*{toUsername}" class="form-select">
+                    <option value="">選択してください</option>
+                    <option th:each="u : ${inquirers}"
+                            th:value="${u.username}"
+                            th:text="${u.username}"></option>
+                </select>
                 <div th:if="${#fields.hasErrors('toUsername')}" class="text-danger small mt-1" th:errors="*{toUsername}"></div>
             </div>
 

@@ -1,6 +1,7 @@
 package com.example.kuwalog.repository;
 
 import com.example.kuwalog.entity.Conversation;
+import com.example.kuwalog.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,8 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
     Optional<Conversation> findByIdWithAll(@Param("id") Long id);
 
     Optional<Conversation> findByBeetleIdAndInitiatorId(Long beetleId, Long initiatorId);
+
+    // 生体のオーナーが問い合わせを受けた相手（initiator）一覧
+    @Query("SELECT c.initiator FROM Conversation c WHERE c.beetle.id = :beetleId AND c.owner.id = :ownerId")
+    List<User> findInitiatorsByBeetleIdAndOwnerId(@Param("beetleId") Long beetleId, @Param("ownerId") Long ownerId);
 }

@@ -7,8 +7,6 @@ import com.example.kuwalog.entity.enums.Sex;
 import com.example.kuwalog.entity.enums.Species;
 import com.example.kuwalog.entity.enums.Stage;
 import com.example.kuwalog.service.RankingService;
-import com.example.kuwalog.entity.BeetleImage;
-import com.example.kuwalog.repository.BeetleImageRepository;
 import com.example.kuwalog.service.BeetleImageService;
 import com.example.kuwalog.service.BeetleService;
 import jakarta.validation.Valid;
@@ -32,17 +30,14 @@ public class BeetleController {
 
     private final BeetleService beetleService;
     private final BeetleImageService beetleImageService;
-    private final BeetleImageRepository beetleImageRepository;
     private final com.example.kuwalog.service.FavoriteService favoriteService;
     private final RankingService rankingService;
 
     public BeetleController(BeetleService beetleService, BeetleImageService beetleImageService,
-                            BeetleImageRepository beetleImageRepository,
                             com.example.kuwalog.service.FavoriteService favoriteService,
                             RankingService rankingService) {
         this.beetleService = beetleService;
         this.beetleImageService = beetleImageService;
-        this.beetleImageRepository = beetleImageRepository;
         this.favoriteService = favoriteService;
         this.rankingService = rankingService;
     }
@@ -70,12 +65,7 @@ public class BeetleController {
                        @RequestParam(defaultValue = "0") int page,
                        Model model) {
         Page<Beetle> beetlePage = beetleService.findWithFilters(classification, sex, stage, locality, page);
-        Map<Long, String> imageMap = new java.util.HashMap<>();
-        for (Beetle b : beetlePage.getContent()) {
-            beetleImageRepository.findFirstByBeetleOrderBySortOrderAsc(b)
-                    .map(BeetleImage::getImageUrl)
-                    .ifPresent(url -> imageMap.put(b.getId(), url));
-        }
+        Map<Long, String> imageMap = beetleImageService.buildImageMap(beetlePage.getContent());
         model.addAttribute("beetlePage", beetlePage);
         model.addAttribute("imageMap", imageMap);
         model.addAttribute("classificationValues", Classification.values());
@@ -111,6 +101,15 @@ public class BeetleController {
         model.addAttribute("images", beetleImageService.findByBeetle(beetle));
         model.addAttribute("favoriteCount", favoriteService.countByBeetleId(id));
         model.addAttribute("favorited", favoriteService.isFavorited(id, username));
+        // 種ラベルからSpecies enumを逆引きして産地区分を取得
+        String speciesOrigin = null;
+        if (beetle.getSpecies() != null) {
+            speciesOrigin = java.util.Arrays.stream(Species.values())
+                    .filter(s -> s.getLabel().equals(beetle.getSpecies()))
+                    .map(Species::getOrigin)
+                    .findFirst().orElse(null);
+        }
+        model.addAttribute("speciesOrigin", speciesOrigin);
         return "beetles/detail";
     }
 

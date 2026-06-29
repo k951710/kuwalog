@@ -1,10 +1,9 @@
 package com.example.kuwalog.controller;
 
 import com.example.kuwalog.dto.TransactionForm;
-import com.example.kuwalog.entity.Beetle;
 import com.example.kuwalog.entity.enums.ReviewType;
-import com.example.kuwalog.repository.ConversationRepository;
 import com.example.kuwalog.service.BeetleService;
+import com.example.kuwalog.service.ConversationService;
 import com.example.kuwalog.service.ReviewService;
 import com.example.kuwalog.service.TransactionService;
 import com.example.kuwalog.service.UserService;
@@ -24,18 +23,18 @@ public class TransactionController {
     private final BeetleService beetleService;
     private final ReviewService reviewService;
     private final UserService userService;
-    private final ConversationRepository conversationRepository;
+    private final ConversationService conversationService;
 
     public TransactionController(TransactionService transactionService,
                                  BeetleService beetleService,
                                  ReviewService reviewService,
                                  UserService userService,
-                                 ConversationRepository conversationRepository) {
+                                 ConversationService conversationService) {
         this.transactionService = transactionService;
         this.beetleService = beetleService;
         this.reviewService = reviewService;
         this.userService = userService;
-        this.conversationRepository = conversationRepository;
+        this.conversationService = conversationService;
     }
 
     @GetMapping
@@ -69,11 +68,9 @@ public class TransactionController {
     public String showForm(@PathVariable Long beetleId,
                            @AuthenticationPrincipal UserDetails userDetails,
                            Model model) {
-        Beetle beetle = beetleService.findById(beetleId);
-        Long ownerId = userService.findByUsername(userDetails.getUsername()).getId();
-        model.addAttribute("beetle", beetle);
+        model.addAttribute("beetle", beetleService.findById(beetleId));
         model.addAttribute("transactionForm", new TransactionForm());
-        model.addAttribute("inquirers", conversationRepository.findInitiatorsByBeetleIdAndOwnerId(beetleId, ownerId));
+        model.addAttribute("inquirers", conversationService.findInquirers(beetleId, userDetails.getUsername()));
         return "transactions/new";
     }
 
@@ -93,10 +90,8 @@ public class TransactionController {
                            Model model) {
 
         if (bindingResult.hasErrors()) {
-            Beetle beetle = beetleService.findById(beetleId);
-            Long ownerId = userService.findByUsername(userDetails.getUsername()).getId();
-            model.addAttribute("beetle", beetle);
-            model.addAttribute("inquirers", conversationRepository.findInitiatorsByBeetleIdAndOwnerId(beetleId, ownerId));
+            model.addAttribute("beetle", beetleService.findById(beetleId));
+            model.addAttribute("inquirers", conversationService.findInquirers(beetleId, userDetails.getUsername()));
             return "transactions/new";
         }
 
@@ -104,10 +99,8 @@ public class TransactionController {
             transactionService.register(beetleId, form, userDetails.getUsername());
         } catch (org.springframework.web.server.ResponseStatusException e) {
             bindingResult.rejectValue("toUsername", "error", e.getReason());
-            Beetle beetle = beetleService.findById(beetleId);
-            Long ownerId = userService.findByUsername(userDetails.getUsername()).getId();
-            model.addAttribute("beetle", beetle);
-            model.addAttribute("inquirers", conversationRepository.findInitiatorsByBeetleIdAndOwnerId(beetleId, ownerId));
+            model.addAttribute("beetle", beetleService.findById(beetleId));
+            model.addAttribute("inquirers", conversationService.findInquirers(beetleId, userDetails.getUsername()));
             return "transactions/new";
         }
 

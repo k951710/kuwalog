@@ -112,6 +112,13 @@ public class ConversationService {
         conversationReadRepository.save(cr);
     }
 
+    // 生体に対してオーナーに問い合わせたユーザー一覧（譲渡先候補として使用）
+    @Transactional(readOnly = true)
+    public List<User> findInquirers(Long beetleId, String ownerUsername) {
+        User owner = getUser(ownerUsername);
+        return conversationRepository.findInitiatorsByBeetleIdAndOwnerId(beetleId, owner.getId());
+    }
+
     @Transactional(readOnly = true)
     public long countUnreadConversations(String username) {
         return userRepository.findByUsername(username)

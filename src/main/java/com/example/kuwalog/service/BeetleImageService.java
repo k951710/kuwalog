@@ -10,7 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 @Service
@@ -105,6 +107,18 @@ public class BeetleImageService {
                 upload(beetleId, file, username);
             }
         }
+    }
+
+    // 生体リストの先頭画像URLをまとめて取得する（一覧表示用）
+    @Transactional(readOnly = true)
+    public Map<Long, String> buildImageMap(List<Beetle> beetles) {
+        Map<Long, String> imageMap = new HashMap<>();
+        for (Beetle b : beetles) {
+            beetleImageRepository.findFirstByBeetleOrderBySortOrderAsc(b)
+                    .map(BeetleImage::getImageUrl)
+                    .ifPresent(url -> imageMap.put(b.getId(), url));
+        }
+        return imageMap;
     }
 
     // 生体削除時にCloudinaryとDBから全画像を削除する

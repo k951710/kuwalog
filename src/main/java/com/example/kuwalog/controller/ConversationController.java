@@ -40,4 +40,12 @@ public class ConversationController {
         Conversation c = conversationService.findOrCreate(beetleId, userDetails.getUsername());
         return "redirect:/conversations/" + c.getId();
     }
+
+    @PostMapping("/conversations/{id}/messages")
+    public String postMessage(@PathVariable Long id,
+                              @RequestParam String content,
+                              @AuthenticationPrincipal UserDetails userDetails) {
+        conversationService.saveMessage(id, userDetails.getUsername(), content);
+        return "redirect:/conversations/" + id;
+    }
 }

@@ -97,11 +97,12 @@
                     </div>
                 </th:block>
             </div>
-            <div class="chat-input-area">
-                <textarea id="messageInput" rows="1" placeholder="メッセージを入力..."
+            <form th:action="@{/conversations/{id}/messages(id=${conversation.id})}" method="post"
+                  class="chat-input-area" onsubmit="return validate(event)">
+                <textarea id="messageInput" name="content" rows="1" placeholder="メッセージを入力..."
                           onkeydown="handleKey(event)"></textarea>
-                <button class="btn btn-kw-primary" onclick="sendMessage()">送信</button>
-            </div>
+                <button type="submit" class="btn btn-kw-primary">送信</button>
+            </form>
         </div>
     </div>
 
@@ -109,66 +110,20 @@
 
 <footer th:replace="~{fragments/layout :: footer}"></footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sockjs-client@1.6.1/dist/sockjs.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-<script th:inline="javascript">
-    const conversationId = /*[[${conversation.id}]]*/ 0;
-    const loginUsername = /*[[${loginUsername}]]*/ '';
-
+<script>
     const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
-    function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    scrollToBottom();
-
-    const socket = new SockJS('/ws');
-    const stompClient = Stomp.over(socket);
-    stompClient.debug = null;
-
-    stompClient.connect({}, function() {
-        stompClient.subscribe('/topic/conversation/' + conversationId, function(frame) {
-            const msg = JSON.parse(frame.body);
-            appendMessage(msg);
-            scrollToBottom();
-        });
-    });
-
-    function appendMessage(msg) {
-        const isMine = msg.senderUsername === loginUsername;
-        const wrapper = document.createElement('div');
-        wrapper.style.alignSelf = isMine ? 'flex-end' : 'flex-start';
-        wrapper.style.textAlign = isMine ? 'right' : 'left';
-
-        const meta = document.createElement('div');
-        meta.className = 'chat-meta';
-        meta.textContent = isMine ? msg.createdAt : (msg.senderUsername + ' · ' + msg.createdAt);
-
-        const bubble = document.createElement('div');
-        bubble.className = 'chat-bubble ' + (isMine ? 'chat-bubble-mine' : 'chat-bubble-other');
-        bubble.textContent = msg.content;
-
-        wrapper.appendChild(meta);
-        wrapper.appendChild(bubble);
-        chatMessages.appendChild(wrapper);
-    }
-
-    function sendMessage() {
-        const input = document.getElementById('messageInput');
-        const content = input.value.trim();
-        if (!content || !stompClient.connected) return;
-        stompClient.send('/app/chat.send', {}, JSON.stringify({
-            conversationId: conversationId,
-            content: content
-        }));
-        input.value = '';
-        input.style.height = 'auto';
+    function validate(event) {
+        const content = document.getElementById('messageInput').value.trim();
+        if (!content) { event.preventDefault(); return false; }
+        return true;
     }
 
     function handleKey(event) {
         if (event.key === 'Enter' && !event.shiftKey) {
             event.preventDefault();
-            sendMessage();
+            event.target.closest('form').requestSubmit();
         }
     }
 </script>

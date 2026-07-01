@@ -33,7 +33,7 @@
          style="background:var(--kw-surface); border:1px solid var(--kw-accent); color:var(--kw-text);">
         <div class="d-flex">
             <div class="toast-body" th:text="${posted} ? '投稿しました！' : '更新しました！'"></div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto"
+            <button type="button" class="btn-close me-2 m-auto"
                     data-bs-dismiss="toast"></button>
         </div>
     </div>
@@ -102,7 +102,7 @@
                    class="btn btn-sm btn-kw-outline">譲渡記録を登録</a>
                 <form th:if="${isAuthenticated and beetle.user.username != loginUsername}"
                       th:action="@{/beetles/{id}/conversations(id=${beetle.id})}" method="post" class="m-0">
-                    <button type="submit" class="btn btn-sm btn-kw-outline">投稿者にコメントする</button>
+                    <button type="submit" class="btn btn-sm btn-kw-outline">コメントする</button>
                 </form>
             </div>
 

@@ -37,8 +37,16 @@
 
     <h1 class="h4 mb-4" style="letter-spacing:0.1em;">サイズランキング</h1>
 
+    <!-- 種検索窓 -->
+    <div class="mb-3">
+        <input type="text" id="speciesSearch" class="form-control"
+               placeholder="検索する"
+               style="color:var(--kw-text); background:var(--kw-surface); border-color:var(--kw-border);"
+               oninput="filterTabs(this.value)">
+    </div>
+
     <!-- 種タブ -->
-    <div class="d-flex flex-wrap gap-2 mb-4" id="speciesTabs">
+    <div class="d-flex flex-wrap gap-2 mb-2" id="speciesTabs">
         <th:block th:each="entry, i : ${rankings}">
             <button class="species-tab"
                     th:classappend="${i.index == 0} ? ' active'"
@@ -46,6 +54,9 @@
                     onclick="switchTab(this)"
                     th:text="${entry.key.label}"></button>
         </th:block>
+    </div>
+    <div class="mb-4">
+        <button class="btn btn-sm btn-kw-outline" onclick="showAllTabs()" style="font-size:0.8rem;">すべての種を表示</button>
     </div>
 
     <!-- 種別セクション -->
@@ -102,7 +113,42 @@ function switchTab(btn) {
     btn.classList.add('active');
     document.querySelectorAll('[id^="section-"]').forEach(s => s.style.display = 'none');
     document.getElementById(btn.dataset.target).style.display = 'block';
+    localStorage.setItem('lastRankingTab', btn.dataset.target);
 }
+
+function filterTabs(query) {
+    const q = query.trim().toLowerCase();
+    let firstVisible = null;
+    document.querySelectorAll('.species-tab').forEach(btn => {
+        const match = btn.textContent.toLowerCase().includes(q);
+        btn.style.display = match ? '' : 'none';
+        if (match && !firstVisible) firstVisible = btn;
+    });
+    if (firstVisible) switchTab(firstVisible);
+}
+
+function showAllTabs() {
+    document.getElementById('speciesSearch').value = '';
+    document.querySelectorAll('.species-tab').forEach(t => t.style.display = '');
+    localStorage.removeItem('lastRankingTab');
+    switchTab(document.querySelector('.species-tab'));
+}
+
+// 前回選んだ種タブだけ表示
+(function restoreTab() {
+    const saved = localStorage.getItem('lastRankingTab');
+    if (!saved) return;
+    const tabs = document.querySelectorAll('.species-tab');
+    let target = null;
+    tabs.forEach(btn => {
+        if (btn.dataset.target === saved) {
+            target = btn;
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+    if (target) switchTab(target);
+})();
 </script>
 </body>
 </html>

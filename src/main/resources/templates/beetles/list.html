@@ -22,12 +22,12 @@
             aspect-ratio: 1;
             object-fit: cover;
             border-radius: 4px 4px 0 0;
-            background-color: #111;
+            background-color: var(--kw-bg);
         }
         .beetle-card-noimg {
             width: 100%;
             aspect-ratio: 1;
-            background-color: #111;
+            background-color: var(--kw-bg);
             border-radius: 4px 4px 0 0;
             display: flex;
             align-items: center;
@@ -69,25 +69,9 @@
            th:if="${isAuthenticated}">+ 新規投稿</a>
     </div>
 
-    <!-- サイズTOP3 -->
-    <div th:unless="${#lists.isEmpty(top3)}" class="kw-card p-3 mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="kw-section-title m-0">サイズTOP3</span>
-            <a th:href="@{/ranking}" style="font-size:0.8rem;">ランキングを見る →</a>
-        </div>
-        <div class="d-flex gap-3 flex-wrap">
-            <a th:each="b, idx : ${top3}"
-               th:href="@{/beetles/{id}(id=${b.id})}"
-               class="d-flex align-items-center gap-2 text-decoration-none"
-               style="color:var(--kw-text);">
-                <span style="font-size:1rem; font-weight:700;"
-                      th:style="${idx.index == 0} ? 'color:#c49a2a' : (${idx.index == 1} ? 'color:#aaa' : 'color:#b07040')"
-                      th:text="${idx.index + 1} + '位'"></span>
-                <span th:text="${b.name}" style="font-size:0.9rem;"></span>
-                <span th:text="${b.sizeMm + ' mm'}" style="font-size:0.85rem; color:var(--kw-muted); font-family:monospace;"></span>
-                <span th:text="${'(' + b.species + ')'}" style="font-size:0.8rem; color:var(--kw-muted);"></span>
-            </a>
-        </div>
+    <!-- ランキング導線 -->
+    <div class="mb-4 text-end">
+        <a th:href="@{/ranking}" class="btn btn-sm btn-kw-outline">サイズランキングを見る →</a>
     </div>
 
     <!-- 絞り込みフォーム -->
